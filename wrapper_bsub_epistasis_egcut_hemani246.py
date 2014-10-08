@@ -8,6 +8,7 @@ import datetime
 import time
 import argparse
 
+sys.path.insert(1, '/cvar/jhlab/snpsnap/snpsnap') # do not use sys.path.insert(0, 'somepath'). path[0], is the directory containing the script that was used to invoke the Python interpreter.
 import pplaunch
 import pphelper
 import pplogger
@@ -34,37 +35,38 @@ def submit():
 		logger.info( "RUNNING: type=%s" % param )
 		
 		### Output dir
-		dir_out="/cvar/jhlab/timshel/epistasis_plink_246/{}".format(param)
-
+		dir_out="/cvar/jhlab/timshel/egcut/epistasis_plink_246probes/{}".format(param)
 		### Creating outdir
 		if not os.path.exists(dir_out):
 			os.makedirs(dir_out) # NOTE use of makedirs(): all intermediate-level directories needed to contain the leaf directory
 
-		#plink_script = dir_out + "/" + "SOMETHING!!"
-
 		### Setting out_prefix
-		out_prefix = dir_out + '/' + os.path.basename(input_bed) # e.g. /cvar/jhlab/snpsnap/data/step1/production_v2_QC_full_duplicate_rm/EUR/ALL.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes
+		out_prefix = dir_out + '/' + param # /cvar/jhlab/timshel/egcut/epistasis_plink_246probes/2570100/2570100
+			# will give files: 2570100.log; 2570100.qt, ...
 
-		### SAFETY CHECK - checking for existence of .PED file with out_prefix
-		if os.path.exists(out_prefix+'.bed'): 
-			logger.critical( "%s | chr%s | bed file %s.bed exists already. Skipping this..." % (super_population, chromosome, out_prefix) )
+		### SAFETY CHECK - checking for existence previous files
+		if os.path.exists(out_prefix+".epi.qt.summary"): # summary file is only outputted when the analysis is finished
+			logger.critical( "%s | result file exists already. Skipping this..." % param )
 			continue
 
 		###################################### PLINK CALL - ######################################
-		command = "plink --bfile {0}"\
-						" --out {3}/ldlists/{4}"\
+		cmd = "plink --bfile {0}"\
+						" --out {1}"\
+						" --pheno {2}"\
+						" --pheno-name {3}"\
+						" --epistasis" \
 						" --noweb"\
 						.format(\
-							genotype_prefix, \
-							snp_list, \
-							kb_cutoff, \
-							output_dir_path, batch_id)
+							bfile, \
+							out_prefix, \
+							pheno, \
+							param)
 
-		logger.info( "Making call :\n%s" % cmd_plink )
+		logger.info( "Making call :\n%s" % cmd )
 
-		jobname = "XXX"
+		jobname = "epi_" + param
 
-		processes.append( pplaunch.LaunchBsub(cmd=cmd_plink, queue_name=queue_name, mem=mem, jobname=jobname, projectname='snpsnp', path_stdout=log_dir, file_output=None, no_output=False, email=email, email_status_notification=email_status_notification, email_report=email_report, logger=logger) ) #
+		processes.append( pplaunch.LaunchBsub(cmd=cmd, queue_name=queue_name, mem=mem, jobname=jobname, projectname='epistasis', path_stdout=log_dir, file_output=None, no_output=False, email=email, email_status_notification=email_status_notification, email_report=email_report, logger=logger) ) #
 
 	for p in processes:
 		p.run()
@@ -117,7 +119,7 @@ def LogArguments():
 #queue_name = "week" # [bhour, bweek] priority
 queue_name = "hour" # [bhour, bweek] priority
 # priority: This queue has a per-user limit of 10 running jobs, and a run time limit of three days.
-mem="2" # gb      
+mem="1" # gb      
 	### RESULTS from EUR_chr_1 (largest chromosome)
 email='pascal.timshel@gmail.com' # [use an email address 'pascal.timshel@gmail.com' or 'False'/'None']
 email_status_notification=False # [True or False]
@@ -128,13 +130,26 @@ current_script_name = os.path.basename(__file__).replace('.py','')
 ###################################### ARGUMENTS ######################################
 args = ParseArguments()
 
+bfile = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.SNPs781"
+pheno = "/cvar/jhlab/timshel/egcut/ETypes_probes_norm_tonu/ExpressionDataCorrected4GWASPCs.ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.with_GTypes832.with_probes246.extract.transpose.txt"
+
+file_probelist = "/cvar/jhlab/timshel/egcut/ETypes_probes_norm_tonu/hemani_probes246.txt"
+###################################### Functions ######################################
+#### Read file with probes to run
+def read_phenotypes(filename):
+	with open(filename, 'r') as f:
+		lines = f.read().splitlines()
+		return lines
+
+#### RUN Variable Functions ####
+params = read_phenotypes(file_probelist)
 
 ###################################### SETUP logging ######################################
 current_script_name = os.path.basename(__file__).replace('.py','')
-log_dir = "/cvar/jhlab/snpsnap/logs_pipeline/production_v2/step1_remove_duplicates" #OBS
+log_dir = "/cvar/jhlab/timshel/egcut/epistasis_plink_246probes" #OBS
 if not os.path.exists(log_dir):
 	os.mkdir(log_dir)
-logger = pplogger.Logger(name=log_name, log_dir=log_dir, log_format=1, enabled=True).get()
+logger = pplogger.Logger(name=current_script_name, log_dir=log_dir, log_format=1, enabled=True).get()
 def handleException(excType, excValue, traceback, logger=logger):
 	logger.error("Logging an uncaught exception", exc_info=(excType, excValue, traceback))
 #### TURN THIS ON OR OFF: must correspond to enabled='True'/'False'
@@ -142,19 +157,15 @@ sys.excepthook = handleException
 logger.info( "INSTANTIATION NOTE: placeholder" )
 ###########################################################################################
 
-def read_phenotypes(filename):
-	with open(filename, 'r') as f:
-		lines = f.read().splitlines()
-
-
-
-
 ###################################### RUN FUNCTIONS ######################################
-# NOW RUN FUNCTIONS
+# RUN Initial functions
 LogArguments()
 test() # test that things are ok
 processes = submit()
 
+
+
+### Finishing
 start_time_check_jobs = time.time()
 check_jobs(processes, logger) # TODO: parse multiprocess argument?
 elapsed_time = time.time() - start_time_check_jobs
