@@ -8,6 +8,8 @@ import pandas as pd
 # this module contains Matlab-like commands
 import matplotlib.pyplot as plt
 
+import datetime
+import time
 import argparse
 
 ###################################### USAGE ######################################
@@ -36,67 +38,139 @@ import argparse
 
 
 ### OSX
-file_bim = "/Users/pascaltimshel/Dropbox/EGCUT_DATA/geno/Prote_370k_251011.no_mixup.chr_infered.bim"
-file_interactions = "/Users/pascaltimshel/p_HiC/Lan_et_al_chromosomal_interactions/lift_findItersection.intersection.paste.updatedIDs"
+#file_bim = "/Users/pascaltimshel/Dropbox/EGCUT_DATA/geno/Prote_370k_251011.no_mixup.chr_infered.bim"
+#file_interactions = "/Users/pascaltimshel/p_HiC/Lan_et_al_chromosomal_interactions/lift_findItersection.intersection.paste.updatedIDs"
 
 ### Broad
-#XX
+file_bim = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.chr_infered.bim"
+#file_interactions = "/cvar/jhlab/timshel/egcut/interactome/lift_findItersection.intersection.paste.updatedIDs"
+file_interactions = "/cvar/jhlab/timshel/egcut/interactome/lift_findItersection.intersection.paste.clean.nosex.updatedIDs"
 
 ###################################### PARAMETERs ###################################### 
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--width", help="INTERGER. Width in bp. Width is the distance to boundary from the focal/center point. x - width <= snp_pos <= x + width", default=500*1000)
 args = arg_parser.parse_args()
 
-
+# in bp. try [20kb, 500kb, 2Mb and 10Mb] or [10kb, 250kb, 1Mb and 5Mb], where the numbers are TWICE the distance to the region boundary from the focal point.
 interaction_width = int(args.width)
-#interaction_width = 500*1000 # in bp. try [20kb, 500kb, 2Mb and 10Mb] or [10kb, 250kb, 1Mb and 5Mb], where the numbers are TWICE the distance to the region boundary from the focal point.
+#interaction_width = 500*1000 
 
-path_base_out = "/Users/pascaltimshel/p_HiC/Lan_et_al_interaction_SNP_sets/{}".format(interaction_width) # OSX
+#path_base_out = "/Users/pascaltimshel/p_HiC/Lan_et_al_interaction_SNP_sets/{}".format(interaction_width) # OSX
+path_base_out = "/cvar/jhlab/timshel/egcut/interactome/{}".format(interaction_width) # BROAD
+
 path_snp_sets = path_base_out+"/snp_sets"
 path_figs = path_base_out+"/figs"
 path_stats = path_base_out+"/stats"
+path_errors = path_base_out+"/errors"
 
-paths = [path_base_out, path_snp_sets, path_figs, path_stats]
+
+paths = [path_base_out, path_snp_sets, path_figs, path_stats, path_errors]
 for path in paths:
 	if not os.path.exists(path):
 		os.makedirs(path)
+	else:
+		print "warining: path exists %s" % path
 
-## figs
-## stats
-## snpsets
+###################################### Files ######################################
+file_stats = path_stats+"/df_set_stats.txt"
+file_summary = path_stats+"/df_set_summary.txt"
+
+################## Error file ##################
+timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H-%M-%S") # e.g. '2014_10_11_15:04:22'
+file_error = path_errors + '/error_{}'.format(timestamp)
+f_error = open(file_error, 'w')
+
+###################################### Checking for previous files ######################################
+if os.path.exists(file_stats):
+	df_set_stats = pd.read_csv(file_stats, sep="\t", index_col=0)  # index_col=0 IS needed, but header=0 is NOT needed
+	print "Detected that existing df_set_stats file exists. Will start from here..."
+	print "LAST INTERACTION CALCULATED: %s" % df_set_stats.index[-1] 
+else:
+	df_set_stats = pd.DataFrame() # has no index
+	print "No previous df_set_stats file exists. Will start from scratch!"
+
+
+###################################### Function for stat files ######################################
+
+def write_summaries():
+	""" Function to (overwrite) existing summary files """
+	################## Creating summary ##################
+	df_set_summary = pd.Series(
+		{
+		'setA_size_mean': df_set_stats['setA_size'].mean(),
+		'setB_size_mean': df_set_stats['setB_size'].mean(),
+		'set_n_interchromosomal_sum': df_set_stats['set_interchromosomal'].sum(),
+		'set_n_tests_non_redundant_sum':df_set_stats['set_n_tests_non_redundant'].sum(),
+		'set_n_tests_plink_sum':df_set_stats['set_n_tests_plink'].sum(),
+		'set_intersect_mean':df_set_stats['set_intersect'].mean(),
+		'set_percentage_shared_sum':df_set_stats['set_percentage_shared'].mean(),
+		'set_lenght_df_set_stats':len(df_set_stats)
+		})
+
+	################## Write stats to csv ##################
+	df_set_stats.to_csv(file_stats, sep="\t") # Series
+	df_set_summary.to_csv(file_summary, sep="\t", index=True) # DataFrame
+
 
 ###################################### READ bim file ######################################
 header_bim = ["chr", "snp", "cm", "pos", "dummy1", "dummy2"]
 df_bim = pd.read_csv(file_bim, sep="\t", header=None, names=header_bim)
 
-
+time_minutes_count = 0
+time_old = 0
 ###################################### Processing ######################################
-df_set_stats = pd.DataFrame() #columns=['setA_size', 'setA_range' 'setB_size', 'setB_range']
 with open(file_interactions, 'r') as f:
-	for line_no, line in enumerate(f):
-		if line_no == 100: break
-		
-		fields = line.strip().split()
+	for line_no, line in enumerate(f, start=1):
+
+		#if line_no == 100: break
+		time_elapsed =  time.time() - time_old
+		if time_elapsed > 60: 
+			time_minutes_count += 1
+			print "Time elapsed: %s minute(s)" % time_minutes_count
+			time_old = time.time()
+
+		line = line.strip()
+		fields = line.split()
 		(chr_A, pos_A, chr_B, pos_B, interaction_ID) = (fields[0], fields[1], fields[4], fields[5], fields[8])
 		
+		### IMPORTANT: "BUFFERING". skipping processing interaction if it is already in df_set_stats.index
+		### This buffering (i.e. writing summaries every 100 lines/interactions) ensures that at max 99 set files are overwritten (and avoids processing of interactions twice).
+		## Note that the buffering relies on interaction_ID NOT to change format. E.g. interaction1 and interaction_1 are not the same!
+		if interaction_ID in df_set_stats.index:
+			print "%s: already seen in df_set_stats. skipping it..." % interaction_ID
+			continue
+
 		## Turn off X chromosomes
 		#if (chr_A.upper() == 'CHRX') or (chr_B.upper() == 'CHRX'):
 		#    continue
 		## Modifying chromosomes
-		if 'X' in chr_A.upper(): chr_A = chr_A.replace('X', '23')
-		if 'X' in chr_B.upper(): chr_B = chr_B.replace('X', '23')
-		chr_A = int(chr_A.lstrip('chr'))
-		chr_B = int(chr_B.lstrip('chr'))
-		pos_A = int(pos_A)
-		pos_B = int(pos_B)
-		if line_no % 50 == 0: print line_no, chr_A, pos_A, chr_B, pos_B, interaction_ID
+		#if 'X' in chr_A.upper(): chr_A = chr_A.replace('X', '23')
+		#if 'X' in chr_B.upper(): chr_B = chr_B.replace('X', '23')
+		#if 'Y' in chr_A.upper(): chr_A = chr_A.replace('Y', '24')
+		#if 'Y' in chr_B.upper(): chr_B = chr_B.replace('Y', '24')
+		try:
+			chr_A = int(chr_A.lstrip('chr'))
+			chr_B = int(chr_B.lstrip('chr'))
+			pos_A = int(pos_A)
+			pos_B = int(pos_B)
+		except Exception as e: # KeyboardInterrupt and SystemExit
+			print "line_no %s | warning: could not convert chr OR pos for A OR B." % line_no
+			print "line: %s" % line
+			print "exception instance: %s" % e
+			print "will log this and continue..."
+			f_error.write("exception:\t{}\nline_no={} | line:\t{}\n".format(e,line_no,line))
+			continue
+
+
+		if line_no % 50 == 0: 
+			print "line_no: {} |".format(line_no), chr_A, pos_A, chr_B, pos_B, interaction_ID
 		
 		### A
 		df_A_extract = df_bim[df_bim["chr"]==chr_A]
-		df_A_extract = df_A_extract[(df_A_extract["pos"] >= pos_A-interaction_width) & (df_bim["pos"] <= pos_A+interaction_width)]
+		df_A_extract = df_A_extract[(df_A_extract["pos"] >= pos_A-interaction_width) & (df_A_extract["pos"] <= pos_A+interaction_width)]
 		### B
 		df_B_extract = df_bim[df_bim["chr"]==chr_B]
-		df_B_extract = df_B_extract[(df_B_extract["pos"] >= pos_B-interaction_width) & (df_bim["pos"] <= pos_B+interaction_width)]       
+		df_B_extract = df_B_extract[(df_B_extract["pos"] >= pos_B-interaction_width) & (df_B_extract["pos"] <= pos_B+interaction_width)]       
 		
 		## set calculations
 		tmp_intersection = len(set(df_A_extract['snp']).intersection(set(df_B_extract['snp'])))
@@ -121,6 +195,7 @@ with open(file_interactions, 'r') as f:
 		df_set_stats = df_set_stats.append(df_stats) # index and columns are appended to the end of the dataframe
 		# If no columns are passed, the columns will be the sorted list of dict keys.
 		
+		### setting file names
 		file_setA = path_snp_sets + "/{}_A.txt".format(interaction_ID)
 		file_setB = path_snp_sets + "/{}_B.txt".format(interaction_ID)
 		with open(file_setA, 'w') as fA:
@@ -130,20 +205,15 @@ with open(file_interactions, 'r') as f:
 			for snp in df_B_extract["snp"]:
 				fB.write(snp+"\n")
 
-###################################### Creating summary  ######################################
-df_set_summay = pd.Series(
-	{
-	'setA_size_mean': df_set_stats['setA_size'].mean(),
-	'setB_size_mean': df_set_stats['setB_size'].mean(),
-	'set_n_interchromosomal_sum': df_set_stats['set_interchromosomal'].sum(),
-	'set_n_tests_non_redundant_sum':df_set_stats['set_n_tests_non_redundant'].sum(),
-	'set_n_tests_plink_sum':df_set_stats['set_n_tests_plink'].sum(),
-	'set_intersect_mean':df_set_stats['set_intersect'].mean(),
-	'set_percentage_shared_sum':df_set_stats['set_percentage_shared'].mean()
-	})
-###################################### Write stats to csv ######################################
-df_set_stats.to_csv(path_stats+"/df_set_stats.txt", sep="\t") # Series
-df_set_summay.to_csv(path_stats+"/df_set_summay.txt", sep="\t", index=True) # DataFrame
+		### write summaries every hundred line. this if statement will NOT be triggered at the first time, because line_no starts at 1
+		if line_no % 100 == 0: 
+			print "writing summary..."
+			time_tmp = time.time()
+			write_summaries() # updating stat files
+			print "done (%s s)" % (time.time()-time_tmp, )
+
+###################################### Writing final file ######################################
+write_summaries() # IMPORTANT: must make sure that we write file when all is done
 
 ###################################### Plotting ######################################
 
@@ -159,4 +229,8 @@ for column_name, series in df_set_stats.iteritems(): # Iterator over (column, se
 	#plt.savefig(file_figure)
 	plt.savefig(file_figure)
 	plt.close() # or plt.close(fig)
+
+
+###################################### Closing files ######################################
+f_error.close()
 
