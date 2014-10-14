@@ -5,7 +5,9 @@ import sys
 import numpy as np
 import pandas as pd
 
-# this module contains Matlab-like commands
+import matplotlib
+matplotlib.use('Agg') #Agg backend and not an X-using backend that required an X11 connection. Call use BEFORE importing pyplot!
+# REF: http://stackoverflow.com/questions/4931376/generating-matplotlib-graphs-without-a-running-x-server
 import matplotlib.pyplot as plt
 
 import datetime
@@ -30,11 +32,11 @@ import argparse
 #2) the left part of the file (column 1-4) will be denoted interaction_XX_A. 
 #3) the right part of the file (column 5-8) wil be denoted interaction_XX_B.
 #4) THE last column contains "updated" interaction IDs. There are 92932 of these updated (there where 96137 of the original)
-# chr12   67280788        67280789        interaction1    chr12   66561751        66561752        interaction1    interaction1
-# chr3    150566213       150566214       interaction2    chr3    150061015       150061016       interaction2    interaction2
-# chr10   28973034        28973035        interaction3    chr10   28917902        28917903        interaction3    interaction3
-# chr10   28978176        28978177        interaction4    chr10   29702662        29702663        interaction4    interaction4
-# chr17   52725358        52725359        interaction5    chr17   53563372        53563373        interaction5    interaction5
+# chr12   67280788        67280789        interaction1    chr12   66561751        66561752        interaction1    interaction_1
+# chr3    150566213       150566214       interaction2    chr3    150061015       150061016       interaction2    interaction_2
+# chr10   28973034        28973035        interaction3    chr10   28917902        28917903        interaction3    interaction_3
+# chr10   28978176        28978177        interaction4    chr10   29702662        29702663        interaction4    interaction_4
+# chr17   52725358        52725359        interaction5    chr17   53563372        53563373        interaction5    interaction_5
 
 
 ### OSX
@@ -103,8 +105,11 @@ def write_summaries():
 		'set_n_tests_non_redundant_sum':df_set_stats['set_n_tests_non_redundant'].sum(),
 		'set_n_tests_plink_sum':df_set_stats['set_n_tests_plink'].sum(),
 		'set_intersect_mean':df_set_stats['set_intersect'].mean(),
-		'set_percentage_shared_sum':df_set_stats['set_percentage_shared'].mean(),
-		'set_lenght_df_set_stats':len(df_set_stats)
+		'set_percentage_shared_mean':df_set_stats['set_percentage_shared'].mean(),
+		'set_lenght_df_set_stats':len(df_set_stats), 
+		'setA_n_empty_sets': sum(df_set_stats['setA_size']==0),
+		'setB_n_empty_sets': sum(df_set_stats['setB_size']==0),
+		'set_n_empty_sets': sum(df_set_stats['setA_size']==0)+sum(df_set_stats['setB_size']==0)
 		})
 
 	################## Write stats to csv ##################
@@ -213,7 +218,10 @@ with open(file_interactions, 'r') as f:
 			print "done (%s s)" % (time.time()-time_tmp, )
 
 ###################################### Writing final file ######################################
+print "writing summary FOR the LAST time..."
+time_tmp = time.time()
 write_summaries() # IMPORTANT: must make sure that we write file when all is done
+print "done (%s s)" % (time.time()-time_tmp, )
 
 ###################################### Plotting ######################################
 

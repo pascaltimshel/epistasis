@@ -35,7 +35,7 @@ def submit():
 		logger.info( "RUNNING: type=%s" % param )
 		
 		### Output dir
-		dir_out="/cvar/jhlab/timshel/egcut/epistasis_plink_246probes_epil1eq1/{}".format(param)
+		dir_out="/cvar/jhlab/timshel/egcut/epistasis_plink_48803probes_test/{}".format(param)
 		### Creating outdir
 		if not os.path.exists(dir_out):
 			os.makedirs(dir_out) # NOTE use of makedirs(): all intermediate-level directories needed to contain the leaf directory
@@ -55,7 +55,7 @@ def submit():
 						" --pheno {2}"\
 						" --pheno-name {3}"\
 						" --epistasis" \
-						" --epi1 1" \
+						" --epi1 0.0000001" \
 						" --noweb"\
 						.format(\
 							bfile, \
@@ -120,7 +120,7 @@ def LogArguments():
 #queue_name = "week" # [bhour, bweek] priority
 queue_name = "hour" # [bhour, bweek] priority
 # priority: This queue has a per-user limit of 10 running jobs, and a run time limit of three days.
-mem="1" # gb      
+mem="4" # gb      
 	### RESULTS from EUR_chr_1 (largest chromosome)
 email='pascal.timshel@gmail.com' # [use an email address 'pascal.timshel@gmail.com' or 'False'/'None']
 email_status_notification=False # [True or False]
@@ -131,10 +131,10 @@ current_script_name = os.path.basename(__file__).replace('.py','')
 ###################################### ARGUMENTS ######################################
 args = ParseArguments()
 
-bfile = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.SNPs781"
-pheno = "/cvar/jhlab/timshel/egcut/ETypes_probes_norm_tonu/ExpressionDataCorrected4GWASPCs.ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.with_GTypes832.with_probes246.extract.transpose.txt"
+bfile = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered"
+pheno = "/cvar/jhlab/timshel/egcut/ETypes_probes_norm_tonu/ExpressionDataCorrected4GWASPCs.ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.with_GTypes832.extract.transpose.txt"
 
-file_probelist = "/cvar/jhlab/timshel/egcut/ETypes_probes_norm_tonu/hemani_probes246.txt"
+file_probelist = "/cvar/jhlab/timshel/egcut/ETypes_probes_norm_tonu/hemani_probes48803.txt"
 ###################################### Functions ######################################
 #### Read file with probes to run
 def read_phenotypes(filename):
@@ -147,10 +147,10 @@ params = read_phenotypes(file_probelist)
 
 ###################################### SETUP logging ######################################
 current_script_name = os.path.basename(__file__).replace('.py','')
-log_dir = "/cvar/jhlab/timshel/egcut/epistasis_plink_246probes" #OBS
+log_dir = "/cvar/jhlab/timshel/egcut/epistasis_plink_48803probes" #OBS
 if not os.path.exists(log_dir):
 	os.mkdir(log_dir)
-log_name = current_script_name + '_epil1eq1' # VARIABLE
+log_name = current_script_name + '_test' # VARIABLE
 logger = pplogger.Logger(name=current_script_name, log_dir=log_dir, log_format=1, enabled=True).get()
 def handleException(excType, excValue, traceback, logger=logger):
 	logger.error("Logging an uncaught exception", exc_info=(excType, excValue, traceback))
