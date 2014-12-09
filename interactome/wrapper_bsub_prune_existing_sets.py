@@ -88,12 +88,26 @@ def find_completed_results(snp_interactions):
 	### CHECK IF FILE EXISTS - *** assumes that PLINK jobs was NOT KILLED while writing file ***
 	### OBS: both A and B are submitted if just one of them does not exists
 	snp_interactions_submit = []
+	snp_interactions_no_previous_files = []
 	for interaction in sorted(snp_interactions): # note that snp_interactions might not be sorted. That is why we sort it
+		logger.info( "checking for previous results for interaction %s" % interaction )
 		A_plink_pruned_file = path_snp_results + "/interaction_{}_A.prune.in".format(interaction) # /cvar/jhlab/timshel/egcut/interactome/5000_pruned/snp_sets/interaction_1_A.prune.in
 		B_plink_pruned_file = path_snp_results + "/interaction_{}_B.prune.in".format(interaction)
-		if not ( os.path.exists(A_plink_pruned_file) and os.path.exists(B_plink_pruned_file) ):
+		run_this_interaction = False
+
+		if not os.path.exists(A_plink_pruned_file):
+			snp_interactions_no_previous_files.append(A_plink_pruned_file)
+			logger.info( "did not find paths for interaction %s: %s" % (interaction, A_plink_pruned_file) )
+			run_this_interaction = True
+
+		if not os.path.exists(B_plink_pruned_file):
+			snp_interactions_no_previous_files.append(B_plink_pruned_file)
+			logger.info( "did not find paths for interaction %s: %s" % (interaction, B_plink_pruned_file) )
+			run_this_interaction = True
+
+		if run_this_interaction:
 			snp_interactions_submit.append(interaction)
-	return snp_interactions_submit
+	return (snp_interactions_submit, snp_interactions_no_previous_files)
 
 
 def write_cmd_file(param, file_job):
@@ -276,16 +290,24 @@ logger.info( "min(snp_interactions): %s" % min(snp_interactions) )
 
 ###################################### Remove files already processed ######################################
 logger.info( "looking for previous calculated files..." )
-snp_interactions_submit = find_completed_results(snp_interactions) # returns LIST
-logger.info( "number of interaction pairs (jobs) to submit: %s" % len(snp_interactions_submit) )
+#snp_interactions_submit = find_completed_results(snp_interactions) # returns LIST
+(snp_interactions_submit, snp_interactions_no_previous_files) = find_completed_results(snp_interactions) # returns LIST
 
 snp_interactions_chunks = list(chunks_generator(snp_interactions_submit, n_jobs_per_bsub)) # MUST use list() and not []
 
 ################## Number of jobs in this submit batch ##################
 n_jobs_in_batch = len(snp_interactions_chunks)
-logger.info( "IMPORTANT: there are %s jobs in this batch" % n_jobs_in_batch )
+
 ###################################### RUN FUNCTIONS ######################################
 processes = submit(snp_interactions_chunks)
+####  ** INSERT THE BELOW INTO wrapper_bsub_gen_and_prune_interaction_SNP_sets.py ***
+
+#logger.info( "interaction pairs (jobs) to submit:\n%s" % ( "\n".join(map(str, sorted(snp_interactions_submit))) ) )
+logger.info( "interaction pairs (jobs) to submit:\n%s" % ( "\n".join(snp_interactions_no_previous_files) ) )
+logger.info( "number of interaction pairs (jobs) to submit: %s" % len(snp_interactions_submit) )
+logger.info( "IMPORTANT: number of jobs in this batch: %s (n_jobs_in_batch)" % n_jobs_in_batch )
+logger.info( "IMPORTANT: n_jobs_per_bsub=%s" % n_jobs_per_bsub )
+
 
 if True:
 	ans = ""

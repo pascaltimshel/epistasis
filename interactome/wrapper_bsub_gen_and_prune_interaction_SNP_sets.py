@@ -43,7 +43,7 @@ def read_file_interactions():
 			(chr_A, pos_A, chr_B, pos_B, interaction_ID) = (fields[0], fields[1], fields[4], fields[5], fields[8])
 
 			try:
-				interaction = int(interaction_ID.lstrip('interaction_')) # OBS: important
+				interaction = int(interaction_ID.lstrip('interaction_')) # OBS: NEW AND important. THIS MAKES THE PATHS NOT FOUND!!!
 				chr_A = int(chr_A.lstrip('chr'))
 				chr_B = int(chr_B.lstrip('chr'))
 				pos_A = int(pos_A)
@@ -60,41 +60,37 @@ def read_file_interactions():
 
 
 # ###################################### NEW FUNCITONS ######################################
-######## MAY BE DELETED!! #####
-# def find_completed_results(interaction_ID_dict):
-# 	### CHECK IF FILE EXISTS - *** assumes that PLINK jobs was NOT KILLED while writing file ***
-# 	### OBS: both A and B are submitted if just one of them does not exists
-# 	snp_interactions_submit = []
-# 	for interaction in sorted(interaction_ID_dict.keys()): # note that interaction_ID_dict might not be sorted
-# 		logger.info( "checking for previous results for interaction %s" % interaction )
-# 		A_plink_pruned_file = path_snp_results + "/interaction_{}_A.prune.in".format(interaction) # /cvar/jhlab/timshel/egcut/interactome/5000_pruned/snp_sets/interaction_1_A.prune.in
-# 		B_plink_pruned_file = path_snp_results + "/interaction_{}_B.prune.in".format(interaction)
-# 		if not ( os.path.exists(A_plink_pruned_file) and os.path.exists(B_plink_pruned_file) ):
-# 			#interaction_ID_dict_submit[interaction] = interaction_ID_dict[interaction] # COPY dict
-# 			snp_interactions_submit.append(interaction)
-# 	return snp_interactions_submit
-
-###################################### NEW FUNCITONS ######################################
 def find_completed_results(interaction_ID_dict):
 	### CHECK IF FILE EXISTS - *** assumes that PLINK jobs was NOT KILLED while writing file ***
 	### OBS: both A and B are submitted if just one of them does not exists
-	logger.info( "looking for files in %s" % path_snp_results )
-	ttmp = time.time()
-	#snp_files = glob.glob(path_snp_results+"/*") # the glob.glob scrables the order. files are NOT sorted...
-	snp_files = os.listdir(path_snp_results) # the list is in arbitrary order
-	logger.info( "done globbing. time: %s" % (time.time()-ttmp,) )
-	#snp_files_basename = [os.path.basename(x) for x in snp_files] # e.g interaction_1_A.txt, interaction_1_B.txt, ...
-	#snp_interactions = {int(re.search(r"(\d+)", x).group(0)) for x in snp_files_basename} # SET comprehension! Entities in set is INTEGERs!
-
 	snp_interactions_submit = []
 	for interaction in sorted(interaction_ID_dict.keys()): # note that interaction_ID_dict might not be sorted
 		logger.info( "checking for previous results for interaction %s" % interaction )
 		A_plink_pruned_file = path_snp_results + "/interaction_{}_A.prune.in".format(interaction) # /cvar/jhlab/timshel/egcut/interactome/5000_pruned/snp_sets/interaction_1_A.prune.in
 		B_plink_pruned_file = path_snp_results + "/interaction_{}_B.prune.in".format(interaction)
-		if not ( (A_plink_pruned_file in snp_files) and (B_plink_pruned_file in snp_files) ):
+		if not ( os.path.exists(A_plink_pruned_file) and os.path.exists(B_plink_pruned_file) ):
 			#interaction_ID_dict_submit[interaction] = interaction_ID_dict[interaction] # COPY dict
+			logger.info( "did not find paths for interaction %s\n%s\n%s" % (interaction, A_plink_pruned_file, B_plink_pruned_file) )
 			snp_interactions_submit.append(interaction)
 	return snp_interactions_submit
+
+############ Alternate version of function - using os.listdir() or glob.glob(). However, this does not work well with 700K files
+# def find_completed_results(interaction_ID_dict):
+# 	### CHECK IF FILE EXISTS - *** assumes that PLINK jobs was NOT KILLED while writing file ***
+# 	### OBS: both A and B are submitted if just one of them does not exists
+# 	logger.info( "looking for files in %s" % path_snp_results )
+# 	ttmp = time.time()
+# 	#snp_files = glob.glob(path_snp_results+"/*") # the glob.glob scrables the order. files are NOT sorted...
+# 	snp_files = os.listdir(path_snp_results) # the list is in arbitrary order
+# 	logger.info( "done globbing. time: %s" % (time.time()-ttmp,) )
+# 	snp_interactions_submit = []
+# 	for interaction in sorted(interaction_ID_dict.keys()): # note that interaction_ID_dict might not be sorted
+# 		logger.info( "checking for previous results for interaction %s" % interaction )
+# 		A_plink_pruned_file = path_snp_results + "/interaction_{}_A.prune.in".format(interaction) # /cvar/jhlab/timshel/egcut/interactome/5000_pruned/snp_sets/interaction_1_A.prune.in
+# 		B_plink_pruned_file = path_snp_results + "/interaction_{}_B.prune.in".format(interaction)
+# 		if not ( (A_plink_pruned_file in snp_files) and (B_plink_pruned_file in snp_files) ):
+# 			snp_interactions_submit.append(interaction)
+# 	return snp_interactions_submit
 
 
 def write_cmd_file(param, file_job):
