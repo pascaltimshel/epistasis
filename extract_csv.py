@@ -9,22 +9,32 @@ import time
 
 time_start = time.time()
 ## USAGE:
-# python extract_csv.py --file_input ./Expression_related_docs_pascal/ExpressionDataCorrected4GWASPCs.ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.txt.head10 --file_out ExpressionDataCorrected4GWASPCs.ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.txt.head10.extract --columns ./Expression_related_docs_pascal/Pheno_Transposed.ExpressionData.txt.QuantileNormalized.Log2Transformed.sample_list_with_GTypes --rows probeID2arrayAddress_map_hemani_SNPpair-probe_all_501.txt.cut2 > extract_csv.out
-
-## full file
+## 246 probes - full filename
 # python extract_csv.py --file_input ./Expression_related_docs_pascal/ExpressionDataCorrected4GWASPCs.ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.txt --file_out ./Expression_related_docs_pascal/ExpressionDataCorrected4GWASPCs.ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.with_GTypes832.with_probes246.extract.txt --columns ./Expression_related_docs_pascal/Pheno_Transposed.ExpressionData.txt.QuantileNormalized.Log2Transformed.sample_list_with_GTypes --rows probeID2arrayAddress_map_hemani_SNPpair-probe_all_501.txt.cut2 > ./Expression_related_docs_pascal/ExpressionDataCorrected4GWASPCs.ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.with_GTypes832.with_probes246.extract.out
 
-## full file (shorter name)
+## 246 probes - shorter filename (NOT USED!)
 # python extract_csv.py --file_input ./Expression_related_docs_pascal/ExpressionDataCorrected4GWASPCs.ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.txt --file_out ./Expression_related_docs_pascal/ETypes.4GWASPCs.Quantile.Log2.Centered.ZTransformed.CovariatesRM.with_GTypes832.with_probes246.extract.txt --columns ./Expression_related_docs_pascal/Pheno_Transposed.ExpressionData.txt.QuantileNormalized.Log2Transformed.sample_list_with_GTypes --rows probeID2arrayAddress_map_hemani_SNPpair-probe_all_501.txt.cut2 > ./Expression_related_docs_pascal/ExpressionDataCorrected4GWASPCs.ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.with_GTypes832.with_probes246.extract.out
 
 
+## All probes - (no rows removed). New paths
+# python extract_csv.py --file_input /Users/pascaltimshel/Dropbox/EGCUT_DATA/Expression_related_docs_pascal/ExpressionDataCorrected4GWASPCs.ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.txt --file_out /Users/pascaltimshel/Dropbox/EGCUT_DATA/Expression_related_docs_pascal/ExpressionDataCorrected4GWASPCs.ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.with_GTypes832.extract.txt --columns /Users/pascaltimshel/Dropbox/EGCUT_DATA/Expression_related_docs_pascal/Pheno_Transposed.ExpressionData.txt.QuantileNormalized.Log2Transformed.sample_list_with_GTypes > /Users/pascaltimshel/Dropbox/EGCUT_DATA/Expression_related_docs_pascal/ExpressionDataCorrected4GWASPCs.ExpressionData.txt.QuantileNormalized.Log2Transformed.ProbesCentered.SamplesZTransformed.CovariatesRemoved.with_GTypes832.extract.out
+
+
+#python extract_csv.py --file_input /Users/pascaltimshel/Dropbox/Ubuntu/peer_analysis/export_residuals/egcut.peer_residuals_log2_k50.top50_mean_top50_var_refseq.txt --file_output /Users/pascaltimshel/Dropbox/Ubuntu/peer_analysis/export_residuals/egcut.peer_residuals_log2_k50.top50_mean_top50_var_refseq.hemani_102-246probes.txt --columns /Users/pascaltimshel/Dropbox/5_Data/EGCUT_DATA/hemani_maps_res/hemani_probes_unique_tmp.txt --delim ' '
+
+
 def ParseArguments():
-	arg_parser = argparse.ArgumentParser()
+	arg_parser = argparse.ArgumentParser("""
+		This program is a memory efficient way of subsetting a tabular file with rows and/or column names. 
+		The script reads and write line-by-line to keep memory usage low.
+		The script IS not dependent on pandas package.
+		"""
+		)
 	arg_parser.add_argument("--file_input", help="input file", required=True)
 	arg_parser.add_argument("--file_output", help="output file", required=True)
-	arg_parser.add_argument("--rows", help="file to list of rows to include. Row file does not have to include 'row label'. It will not any effect since the header is processed seperately")
-	arg_parser.add_argument("--columns", help="file to list of columns to include. Column file CAN include 'row label, e.g. LAB', but the row label will always be printed")
-	arg_parser.add_argument("--delim", default='\t', help="delimiter to split on")
+	arg_parser.add_argument("--rows", help="file of list of rows to include. Row file does not have to include 'row label'. It will not have any effect since the header is processed seperately.")
+	arg_parser.add_argument("--columns", help="file of list of columns to include. Column file can include 'row label, e.g. 'LAB', but it will not have any effect since the header is processed seperately (row label will always be printed).")
+	arg_parser.add_argument("--delim", default='\t', help="delimiter to split on. The argument value must be a string, e.g. ' ' (SINGLE whitespace) or ',' (comma). Default is to split on tab ('\t').")
 
 	args = arg_parser.parse_args()
 	return args
@@ -81,7 +91,13 @@ keep_columns_idx = None
 with open(file_input, 'r') as fin, open(file_output, 'w') as fout: # multiple context with statement (Python 2.7 and up!)
 	for line_no, line in enumerate(fin):
 		line = line.strip('\n')
-		fields = line.split(delim)
+		fields = line.split(delim) 
+		#str.split([sep[, maxsplit]]): 
+			#OBS1: Splitting an empty string with a specified separator returns ['']
+			#OBS2: 
+			# If sep is not specified or is None, a different splitting algorithm is applied: 
+			# runs of consecutive whitespace are regarded as a single separator, 
+			# and the result will contain no empty strings at the start or end if the string has leading or trailing whitespace
 
 		## Keeping track of rows seen
 		rows_seen.append(fields[0])
@@ -109,7 +125,7 @@ with open(file_input, 'r') as fin, open(file_output, 'w') as fout: # multiple co
 			# 		keep_columns_not_found.append(keep)
 
 		### Skipping rows (except header, if it is not present in "keep_rows")
-		if (fields[0] not in keep_rows) and (line_no != 0 ):
+		if (args.rows) and (fields[0] not in keep_rows) and (line_no != 0 ):
 			continue
 
 		rows_printed += 1
@@ -118,10 +134,12 @@ with open(file_input, 'r') as fin, open(file_output, 'w') as fout: # multiple co
 		fout.write( "{}\n".format(delim.join(cols2_write)) )
 
 ### Rows that where not found:
-keep_rows_not_found = [keep for keep in keep_rows if keep not in rows_seen]
+if args.rows:
+	keep_rows_not_found = [keep for keep in keep_rows if keep not in rows_seen]
+	print "Rows not found: %s\n%s" % ( len(keep_rows_not_found), "\n".join(keep_rows_not_found) )
+if args.columns:
+	print "Columns not found: %s\n%s" % ( len(keep_columns_not_found), "\n".join(keep_columns_not_found) )
 
-print "Columns not found: %s\n%s" % ( len(keep_columns_not_found), "\n".join(keep_columns_not_found) )
-print "Rows not found: %s\n%s" % ( len(keep_rows_not_found), "\n".join(keep_rows_not_found) )
 
 print "Number of rows printed (including header): %s" % rows_printed
 print "Number of columns printed (including 'row labels') %s" % len(keep_columns_idx)
