@@ -9,7 +9,7 @@ library(plyr)
 
 rm(list=ls())
 
-wd <- "/Users/pascaltimshel/git/epistasis/iteractome_fit-hic-c"
+wd <- "/Users/pascaltimshel/git/epistasis/interactome_fit-hic-c"
 setwd(wd)
 ######################
 
@@ -95,5 +95,8 @@ df.interaction_table.sub.q.sorted[, c("chrA", "posA", "chrB", "posB")] <- df.loc
 df.interaction_table.sub.q.sorted$interactionID_final <- paste0("interaction_", 1:nrow(df.interaction_table.sub.q.sorted))
 str(df.interaction_table.sub.q.sorted)
 
-write.table(df.interaction_table.sub.q.sorted, file="interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-8.txt", sep="\t", quote=F, row.names=F, col.names=TRUE)
+path.out <- "/Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/" # remember trailing backslash
+file <- sprintf("interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_%s.txt", q.threshold)
+file.out <- paste0(path.out, file)
+write.table(df.interaction_table.sub.q.sorted, file=file.out, sep="\t", quote=F, row.names=F, col.names=TRUE)
 
