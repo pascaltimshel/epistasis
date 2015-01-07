@@ -45,11 +45,13 @@ test()
 ###################################### File - input ######################################
 ### Input
 bfile = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.SNPs781"
-probe_dir = "/cvar/jhlab/timshel/egcut/ETypes_probes_norm_peer/phenofile_log2_k50.top50_mean_top50_var_refseq_hemani_probes_unique_102"
+#probe_dir = "/cvar/jhlab/timshel/egcut/ETypes_probes_norm_peer/phenofile_log2_k50.top50_mean_top50_var_refseq_hemani_probes_unique_102"
+probe_dir = "/cvar/jhlab/timshel/egcut/ETypes_probes_norm_peer/phenofile_log2_k50.hemani_probes235"
 
 
 make_subprocess_calls = True # this controls whether or not to make subprocess calls.
-epi1 = "1e-5" # string to set the significance thresshold
+epi1 = "1e-2" # string to set the significance thresshold
+#epi1 = "1" # ALL OUTPUT!
 
 ###################################### Preparing directories ######################################
 time_stamp = datetime.datetime.now().strftime("%a_%b_%d_%Y_%H%M%S")
