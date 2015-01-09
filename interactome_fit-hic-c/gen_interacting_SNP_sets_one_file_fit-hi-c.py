@@ -18,7 +18,12 @@ import collections
 
 ###################################### USAGE ######################################
 
-#python gen_interacting_SNP_sets.py --width 500000
+#python gen_interacting_SNP_sets_one_file_fit-hi-c.py --width 500000
+
+###################################### WARNING ######################################
+
+# I am not sure that the "caching" functing of the script works in this script.
+# I recommend to ALWAYS delete ANY "old" result directory and re-run this analysis.
 
 ###################################### FILE snippets ######################################
 ### file_bim
@@ -30,16 +35,15 @@ import collections
 
 ### file_interactions
 ### IMPORTANT information: 
-#1) the first column listing the position will be used (e.g. 67280788 and not 67280789)
-#2) the left part of the file (column 1-4) will be denoted interaction_XX_A. 
-#3) the right part of the file (column 5-8) wil be denoted interaction_XX_B.
-#4) THE last column contains "updated" interaction IDs. There are 92932 of these updated (there where 96137 of the original)
-# chr12   67280788        67280789        interaction1    chr12   66561751        66561752        interaction1    interaction_1
-# chr3    150566213       150566214       interaction2    chr3    150061015       150061016       interaction2    interaction_2
-# chr10   28973034        28973035        interaction3    chr10   28917902        28917903        interaction3    interaction_3
-# chr10   28978176        28978177        interaction4    chr10   29702662        29702663        interaction4    interaction_4
-# chr17   52725358        52725359        interaction5    chr17   53563372        53563373        interaction5    interaction_5
-
+#0) The file has a *HEADER*
+#1) The file is sorted chr(chrA) <= chr(chrB)
+#2) The chromosomes are NUMERIC/INTEGER. No sex chromosomes.
+#3) THE last column contains "updated" interaction IDs. 
+# chrA	posA	chrB	posB	contactCount	p.value	q.value	interactionID	interactionID_final
+# 10	100515000	15	71455000	5	2.097017e-16	3.081624e-09	interaction_393	interaction_1
+# 5	152585000	10	100665000	5	1.602572e-14	7.197691e-08	interaction_521	interaction_2
+# 2	8165000	10	100725000	5	1.821807e-15	1.39996e-08	interaction_555	interaction_3
+# 10	100955000	16	69065000	5	1.526798e-15	1.238718e-08	interaction_727	interaction_4
 
 ###################################### Files - input ######################################
 ### OSX
@@ -50,7 +54,21 @@ import collections
 #file_bim = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.bim" # REMEMBER: use the CLEAN FILE later!
 file_bim = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.bim" 
 #file_interactions = "/cvar/jhlab/timshel/egcut/interactome/lift_findItersection.intersection.paste.updatedIDs"
-file_interactions = "/cvar/jhlab/timshel/egcut/interactome/lift_findItersection.intersection.paste.clean.nosex.updatedIDs.interchromosomal"
+#file_interactions = "/cvar/jhlab/timshel/egcut/interactome/lift_findItersection.intersection.paste.clean.nosex.updatedIDs.interchromosomal"
+
+#file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-06.txt"
+#file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-08.txt"
+#file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-09.txt"
+file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-10.txt"
+
+##############################################################################################
+### *IMPORTANT*: setting the specificiers for the data set. THIS IS USED IN path_base_out *###
+hic_data_set = "hIMR90"
+#q_threshold = "q_1e-06" 
+#q_threshold = "q_1e-08"
+#q_threshold = "q_1e-09"
+q_threshold = "q_1e-10"
+###############################################################################################
 
 ## wc 12/09/2014
 #  2009553 = Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.bim
@@ -66,7 +84,7 @@ interaction_width = int(args.width)
 #interaction_width = 500*1000 
 
 #path_base_out = "/Users/pascaltimshel/p_HiC/Lan_et_al_interaction_SNP_sets/{}".format(interaction_width) # OSX
-path_base_out = "/cvar/jhlab/timshel/egcut/interactome/{}_snppool_interchromosomal_clean".format(interaction_width) # BROAD
+path_base_out = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/{width}_snppool_{dataset}_{q}".format(width=interaction_width, dataset=hic_data_set, q=q_threshold) # BROAD
 
 path_snp_sets = path_base_out+"/snp_sets"
 path_figs = path_base_out+"/figs"
@@ -84,6 +102,8 @@ for path in paths:
 ###################################### Files ######################################
 file_stats = path_stats+"/df_set_stats.txt"
 file_summary = path_stats+"/df_set_summary.txt"
+#file_interaction_table = path_stats+"/df_interaction_table.txt"
+file_interaction_table_snps = path_stats+"/df_interaction_table_snps.txt"
 
 ################## Error file ##################
 timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H-%M-%S") # e.g. '2014_10_11_15:04:22'
@@ -91,12 +111,18 @@ file_error = path_errors + '/error_{}'.format(timestamp)
 f_error = open(file_error, 'w')
 
 ###################################### Checking for previous files ######################################
-if os.path.exists(file_stats):
+if os.path.exists(file_stats): # this check could also be for file_interaction_table/file_interaction_table_snps
 	df_set_stats = pd.read_csv(file_stats, sep="\t", index_col=0)  # index_col=0 IS needed, but header=0 is NOT needed
+	
+	#df_interaction_table = pd.read_csv(file_interaction_table, sep="\t", index_col=0)  # index_col=0 IS needed, but header=0 is NOT needed
+	df_interaction_table_snps = pd.read_csv(file_interaction_table_snps, sep="\t", index_col=0)  # index_col=0 IS needed, but header=0 is NOT needed
 	print "Detected that existing df_set_stats file exists. Will start from here..."
 	print "LAST INTERACTION CALCULATED: %s" % df_set_stats.index[-1] 
 else:
 	df_set_stats = pd.DataFrame() # has no index
+	#df_interaction_table = pd.DataFrame() # has no index
+	df_interaction_table_snps = pd.DataFrame() # has no index
+
 	print "No previous df_set_stats file exists. Will start from scratch!"
 
 
@@ -121,8 +147,16 @@ def write_summaries():
 		})
 
 	################## Write stats to csv ##################
-	df_set_stats.to_csv(file_stats, sep="\t") # Series
-	df_set_summary.to_csv(file_summary, sep="\t", index=True) # DataFrame
+	### Writing file including column wiht list of comma seperated SNPs for setA and setB
+	df_interaction_table_snps.to_csv(file_interaction_table_snps, sep="\t", index=False) # DataFrame. This writes the index by default
+
+	### Write the data frame with PER INTERACTION data (large file)
+	df_set_stats.to_csv(file_stats, sep="\t", index=False) # DataFrame. This writes the index by default
+
+	### Write current SUMMARY of stats. (small file)
+	df_set_summary.to_csv(file_summary, sep="\t", index=True) # Series
+
+
 
 
 ###################################### READ bim file ######################################
@@ -131,12 +165,21 @@ df_bim = pd.read_csv(file_bim, sep="\t", header=None, names=header_bim)
 
 time_minutes_count = 0
 time_old = 0
+### Some timing
+list_time_lookup = []
+list_time_set_operations = []
+
 ###################################### Processing ######################################
 ### setting file names
 file_setA = path_snp_sets + "/set_A.txt"
 file_setB = path_snp_sets + "/set_B.txt"
 with open(file_interactions, 'r') as f:
 	for line_no, line in enumerate(f, start=1):
+
+		### *Skipping header* ###
+		if line_no==1: 
+			print "skipping header!"
+			continue
 
 		## USE THIS FOR TESTING ##
 		#if line_no == 100: break
@@ -150,8 +193,9 @@ with open(file_interactions, 'r') as f:
 		line = line.strip()
 		fields = line.split()
 		# KEEP THIS SNIPPED UPDATED
-		# chr12   67280788        67280789        interaction1    chr12   66561751        66561752        interaction1    interaction_1
-		(chr_A, pos_A, chr_B, pos_B, interaction_ID) = (fields[0], fields[1], fields[4], fields[5], fields[8])
+		# chrA	posA	chrB	posB	contactCount	p.value	q.value	interactionID	interactionID_final
+		# 10	100515000	15	71455000	5	2.097017e-16	3.081624e-09	interaction_393	interaction_1
+		(chr_A, pos_A, chr_B, pos_B, interaction_ID) = (fields[0], fields[1], fields[2], fields[3], fields[8])
 		
 		
 		### IMPORTANT: "BUFFERING". skipping processing interaction if it is already in df_set_stats.index
@@ -161,17 +205,10 @@ with open(file_interactions, 'r') as f:
 			print "%s: already seen in df_set_stats. skipping it..." % interaction_ID
 			continue
 
-		## Turn off X chromosomes
-		#if (chr_A.upper() == 'CHRX') or (chr_B.upper() == 'CHRX'):
-		#    continue
-		## Modifying chromosomes
-		#if 'X' in chr_A.upper(): chr_A = chr_A.replace('X', '23')
-		#if 'X' in chr_B.upper(): chr_B = chr_B.replace('X', '23')
-		#if 'Y' in chr_A.upper(): chr_A = chr_A.replace('Y', '24')
-		#if 'Y' in chr_B.upper(): chr_B = chr_B.replace('Y', '24')
+		### Convert to chr and pos to INTEGERs
 		try:
-			chr_A = int(chr_A.lstrip('chr'))
-			chr_B = int(chr_B.lstrip('chr'))
+			chr_A = int(chr_A)
+			chr_B = int(chr_B)
 			pos_A = int(pos_A)
 			pos_B = int(pos_B)
 		except Exception as e: # KeyboardInterrupt and SystemExit
@@ -181,11 +218,15 @@ with open(file_interactions, 'r') as f:
 			print "will log this and continue..."
 			f_error.write("exception:\t{}\nline_no={} | line:\t{}\n".format(e,line_no,line))
 			continue
+		# Check that chr_A and chr_B are as we except
+		#if not (isinstance(chr_A, int) and isinstance(chr_B, int)): # or try is_integer()
 
 
 		if line_no % 50 == 0: 
 			print "line_no: {} |".format(line_no), chr_A, pos_A, chr_B, pos_B, interaction_ID
 		
+		###################################### LOOK-UP SNPs ######################################
+		tmp_time_lookup_start = time.time()
 		### A
 		df_A_extract = df_bim[df_bim["chr"]==chr_A]
 		df_A_extract = df_A_extract[(df_A_extract["pos"] >= pos_A-interaction_width) & (df_A_extract["pos"] <= pos_A+interaction_width)]
@@ -193,30 +234,73 @@ with open(file_interactions, 'r') as f:
 		df_B_extract = df_bim[df_bim["chr"]==chr_B]
 		df_B_extract = df_B_extract[(df_B_extract["pos"] >= pos_B-interaction_width) & (df_B_extract["pos"] <= pos_B+interaction_width)]       
 		
+		list_time_lookup.append(time.time() - tmp_time_lookup_start) # this is a float
+		if line_no % 50 == 0:
+			print "avg look-up time: %s s" % ( sum(list_time_lookup)/float(len(list_time_lookup)) )
+			list_time_lookup = []
+
+
+		########################################################################################
+
+		###################################### SET COMPUTATIONS ######################################
+		tmp_time_set_operations_start = time.time()
+
 		## set calculations
 		tmp_intersection = len(set(df_A_extract['snp']).intersection(set(df_B_extract['snp'])))
 		tmp_union = len(set(df_A_extract['snp']).union(set(df_B_extract['snp'])))
 		## number of tests
 		n_tests_plink = len(df_A_extract)*len(df_B_extract)-tmp_intersection
 		n_tests_non_redundant = len(df_A_extract)*len(df_B_extract)-tmp_intersection**2+(tmp_intersection-1)*tmp_intersection/2 # int division ok! # N_A*N_B-N_AB^2+(N_AB-1)*N_AB/2
-		## df_stats
-		df_stats = pd.DataFrame({'set_interchromosomal':1 if chr_A != chr_B else 0,
-								 'set_distance': abs(pos_A - pos_B) if chr_A == chr_B else None, # or np.nan
+		
+		### tmp_df_stats
+		tmp_df_stats = pd.DataFrame({
+								'interaction_ID':interaction_ID,
+								'chr_A':chr_A,
+								'pos_A':pos_A,
+								'chr_B':chr_B,
+								'pos_B':pos_A,
+								'set_interchromosomal':1 if chr_A != chr_B else 0,
+								'set_distance': abs(pos_A - pos_B) if chr_A == chr_B else None, # or np.nan
 								'set_intersect':tmp_intersection,
 								'set_union':tmp_union,
 								'set_self_interaction':1 if (chr_A == chr_B) and (pos_A == pos_B) else 0,
 								'set_percentage_shared':tmp_intersection/float(tmp_union)*100 if tmp_union!=0 else None, # float divison
 								'set_n_tests_plink':n_tests_plink,
 								'set_n_tests_non_redundant': n_tests_non_redundant,
-								 'setA_size':len(df_A_extract), 
-								 'setA_range':df_A_extract["pos"].max()-df_A_extract["pos"].min(), 
-								 'setB_size':len(df_B_extract), 
-								 'setB_range':df_B_extract["pos"].max()-df_B_extract["pos"].min()}, 
+								'setA_size':len(df_A_extract), 
+								'setA_range':df_A_extract["pos"].max()-df_A_extract["pos"].min(), 
+								'setB_size':len(df_B_extract), 
+								'setB_range':df_B_extract["pos"].max()-df_B_extract["pos"].min()}, 
 								index=[interaction_ID])
-		df_set_stats = df_set_stats.append(df_stats) # index and columns are appended to the end of the dataframe
-		# If no columns are passed, the columns will be the sorted list of dict keys.
+		df_set_stats = df_set_stats.append(tmp_df_stats) # index and columns are appended to the end of the dataframe
 		
-		### NEW: *APPEND* to file. NOTE: this causes problems with the CACHING properties.
+		list_time_set_operations.append(float(time.time() - tmp_time_set_operations_start)) # this is a float
+		if line_no % 50 == 0:
+			print "avg set-operation time: %s s" % ( sum(list_time_set_operations)/float(len(list_time_set_operations)) )
+			list_time_set_operations = []
+		# If no columns are passed, the columns will be the sorted list of dict keys.
+		##############################################################################
+
+
+		### tmp_df_interaction_table_snps
+		colorder = ["interaction_ID", "chr_A", "pos_A", "chr_B", "pos_B", "setA_size", "setB_size", "snps_A", "snps_B"]
+		# *IMPORTANT* the column ORDER MUST BE SYNCHRONIZED!!!
+		tmp_df_interaction_table_snps = pd.DataFrame({
+			'interaction_ID':interaction_ID,
+			'chr_A':chr_A,
+			'pos_A':pos_A,
+			'chr_B':chr_B,
+			'pos_B':pos_A,
+			'setA_size':len(df_A_extract),
+			'setB_size':len(df_B_extract),
+			'snps_A': ";".join(df_A_extract["snp"]),
+			'snps_B': ";".join(df_B_extract["snp"])},
+			index=[interaction_ID], columns=colorder)
+		df_interaction_table_snps = df_interaction_table_snps.append(tmp_df_interaction_table_snps) # index and columns are appended to the end of the dataframe
+
+
+		### NEW: *APPEND* to SET file. NOTE: this causes problems with the CACHING properties.
+		### UPDATE: it should NOT cause a problem BECAUSE WE ARE ONLY INTERESTED IN UNIQUE SNPS --> the "set_AB.txt" will only contain unique SNPs.
 		with open(file_setA, 'a') as fA:
 			for snp in df_A_extract["snp"]:
 				fA.write(snp+"\t"+interaction_ID+"\n")
