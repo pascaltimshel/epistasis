@@ -57,10 +57,12 @@ df.interaction_table <- df.interaction_table[!(bool.chrA.sex | bool.chrB.sex), ]
 #################################################################################
 
 ######################### SUBSETTING: threshold on q-value #######################
+#q.threshold <- 1e-6 # --> 26325
+#q.threshold <- 1e-7 # --> 8114
 q.threshold <- 1e-8 # --> 3468
 #q.threshold <- 1e-9 # --> 1021
 #q.threshold <- 1e-10 # --> 432
-#q.threshold <- 1e-11 # --> 432
+#q.threshold <- 1e-11 # --> 214
 df.interaction_table.sub.q <- df.interaction_table[df.interaction_table$q.value<=q.threshold,]
 nrow(df.interaction_table.sub.q)
 head(df.interaction_table.sub.q)
