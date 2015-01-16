@@ -18,6 +18,12 @@ import subprocess
 import logging
 
 
+
+###################################### SELF NOTE January 2015 ######################################
+## This script is *LESS sophisticated* in terms of output produced (printing messages) compared to its partner "wrapper_bsub_prune_existing_sets.py"
+
+
+
 ###################################### file_interactions ######################################
 ### file_interactions
 ### IMPORTANT information: 

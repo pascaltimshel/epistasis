@@ -70,15 +70,21 @@ print "job_name: %s" % job_name
 
 ###################################### File - input ######################################
 ### Input
-bfile = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered" # DO NOT ADD EXTENSION to file
+#bfile = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean" # DO NOT ADD EXTENSION to file
+bfile = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.maf5" # DO NOT ADD EXTENSION to file
 probe_dir = "/cvar/jhlab/timshel/egcut/ETypes_probes_norm_peer/phenofile_log2_k50.top50_mean_top50_var_refseq"
-file_set = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/10000_snppool_hIMR90_q_1e-10/snp_sets/set_AB.txt"
+#file_set = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/10000_snppool_hIMR90_q_1e-10/snp_sets/set_AB.txt"
+file_set = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/10000_snppool_hIMR90_q_1e-07/snp_sets/set_AB.txt"
 
 
 make_subprocess_calls = True # this controls whether or not to make subprocess calls.
-epi1 = "1e-10" # string to set the significance thresshold
-#epi1 = "1e-6" # string to set the significance thresshold
+
+###################################### Significance threshold: epi1 ######################################
 #epi1 = "1" # ALL OUTPUT!
+#epi1 = "1e-6" # string to set the significance thresshold
+epi1 = "1e-10" # string to set the significance thresshold
+epi2 = epi1
+
 
 ###################################### Preparing directories ######################################
 #time_stamp = datetime.datetime.now().strftime("%a_%b_%d_%Y_%H%M%S")
@@ -107,9 +113,12 @@ with open("job_summary.txt", 'w') as f:
 	f.write("epi1: " + epi1 + '\n')
 
 ###################################### Changing dir to EPISTASIS file ######################################
-## make dir for Epistasis output
+#### make dirs 
 fastEpi_dir = "fastEpi_out"
+subprocess_out_dir = "subprocess_out"
+#fastEpi_bin = "fastEpi_bin"
 os.mkdir(fastEpi_dir)
+os.mkdir(subprocess_out_dir)
 #### CHANGE DIR - fastEpi_out ####
 os.chdir(fastEpi_dir)
 print "Have now changed directory. Current working directory: %s" % os.getcwd()
@@ -136,22 +145,24 @@ for count, probe in enumerate(probes, start=1):
 	#################
 
 	################## preFastEpistasis ##################
+	time_preFastEpistasis_start = time.time()
 	cmd = "preFastEpistasis --bfile %s --pheno %s --set %s --out %s" % (bfile, probe_full_path, file_set, epi_out_prefix) # # Output name will be probe
 	print cmd
-	subprocess_file_out = "%s.preFastEpistasis.subprocess.out" % epi_out_prefix
+	subprocess_file_out = "../%s/%s.preFastEpistasis.subprocess.out" % (subprocess_out_dir, epi_out_prefix)
 	with open(subprocess_file_out, 'w') as fsub:
 		if make_subprocess_calls:
 			p = subprocess.Popen(cmd, stdout=fsub, stderr=subprocess.STDOUT, shell=True)
 			p.wait()
-	print "preFastEpistasis done"
+	time_preFastEpistasis_elapsed = time.time() - time_preFastEpistasis_start
+	print "preFastEpistasis done: %s" % time_preFastEpistasis_elapsed
 	
 	################## smpFastEpistasis ##################
 	time_smpFastEpistasis_start = time.time()
 	# Remember: smpFastEpistasis does not take an "--out" argument
 	bin_file = "%s.bin" % (epi_out_prefix, ) # e.g. ILMN_1678939.pheno.bin
-	cmd = "smpFastEpistasis %s --method 0 --epi1 %s" % (bin_file, epi1)
+	cmd = "smpFastEpistasis %s --method 0 --epi1 %s --epi2 %s" % (bin_file, epi1, epi2)
 	print cmd
-	subprocess_file_out = "%s.smpFastEpistasis.subprocess.out" % epi_out_prefix
+	subprocess_file_out = "../%s/%s.smpFastEpistasis.subprocess.out" % (subprocess_out_dir, epi_out_prefix)
 	with open(subprocess_file_out, 'w') as fsub:
 		if make_subprocess_calls:
 			p = subprocess.Popen(cmd, stdout=fsub, stderr=subprocess.STDOUT, shell=True)
@@ -165,13 +176,20 @@ for count, probe in enumerate(probes, start=1):
 	post_out_file = "%s.epi.qt.lm" % epi_out_prefix # e.g. ILMN_1678939.pheno.epi.qt.lm - NOTE THAT USING "--out <FILENAME>" sets the EXACT FILENAME - no extensions will be added
 	cmd = "postFastEpistasis --pvalue --sort --index %s --out %s" % (index_file, post_out_file)
 	print cmd
-	subprocess_file_out = "%s.postFastEpistasis.subprocess.out" % epi_out_prefix
+	subprocess_file_out = "../%s/%s.postFastEpistasis.subprocess.out" % (subprocess_out_dir, epi_out_prefix)
 	with open(subprocess_file_out, 'w') as fsub:
 		if make_subprocess_calls:
 			p = subprocess.Popen(cmd, stdout=fsub, stderr=subprocess.STDOUT, shell=True)
 			p.wait()
 	print "postFastEpistasis done"
 
+	################## Cleaning ##################
+	### Removing .bin file
+	bin_file_size_mb = os.path.getsize(bin_file)/(1024*1024.0)
+	print "Removing .bin file: %s (size=%s)" % (bin_file, bin_file_size_mb)
+	os.remove(bin_file)
+
+	################## Finishing ##################
 	time_probe_elapsed = time.time() - time_probe_start
 	print "RUNTIME FOR PROBE: %s" % time_probe_elapsed
 
