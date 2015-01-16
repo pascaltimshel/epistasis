@@ -1,1 +1,11 @@
+################## EPISTASIS .gitignore file ##################
+### OSX files
 .DS_Store
+
+
+###################################### SOME INSPIRATION from SCZ (*NOT ACTIVE*) ######################################
+### R data files
+#*.Rdata
+
+### Igore data file (use "data/" to ignore folders named "data" at any level of the filesystem tree (only folders))
+#data
