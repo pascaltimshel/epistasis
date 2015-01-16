@@ -190,8 +190,8 @@ def LogArguments():
 
 
 ###################################### Global params ######################################
-queue_name = "week" # --> 200
-#queue_name = "hour" # --> 400
+#queue_name = "week" # --> 200
+queue_name = "hour" # --> 400
 #queue_name = "priority" # --> 10
 #queue_name = "MEDPOP" # [bhour, bweek] priority
 # priority: This queue has a per-user limit of 10 running jobs, and a run time limit of three days.
@@ -220,9 +220,10 @@ script2call = "/cvar/jhlab/timshel/git/epistasis/interactome_fit-hic-c/run_fast_
 ######################################  ######################################
 ### Overall parameters
 maf = "5"
-interaction_width = "10000"
+interaction_width = "50000"
+#interaction_width = "10000"
 hic_dataset = "hIMR90"
-q_threshold = "1e-08"
+q_threshold = "1e-09"
 #q_threshold = "1e-10"
 
 ### Input BIM file: *UPS: keep this in sync!* ###
@@ -234,6 +235,9 @@ path_files = "/cvar/jhlab/timshel/egcut/ETypes_probes_norm_peer/phenofile_log2_k
 
 ### Formatting file_set
 file_set = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_{maf}_sets/{interaction_width}_snppool_{hic_dataset}_q_{q_threshold}/snp_sets/set_AB.txt".format(maf=maf, interaction_width=interaction_width, hic_dataset=hic_dataset, q_threshold=q_threshold)
+if not os.path.exists(file_set): # checks for a valid symbolic link. That is, it cannot be broken
+	raise Exception("The file_set symlink is broken - path does not exists")
+
 
 ### Significance threshold: epi1 ###
 epi1 = "1e-10" # string to set the significance thresshold
@@ -252,15 +256,18 @@ file_path_format_holder = path_epi_results + "/{}.pheno.epi.qt.lm" # OBS: THIS S
 
 
 path_jobs = path_output_base + "/jobs" # OBS: the worker will also write to this directory.
+path_lsf_job_ids = path_output_base + "/LSF_jobs_ids"
+
 
 file_json_config = path_output_base + "/config.json" # json file!
 
+
+################## MISC ##################
 timestamp = datetime.datetime.now().strftime("%Y_%m_%d-%H.%M.%S") # e.g. '2014_10_13-14.08.47'
-
-
+file_lsf_job_id = path_lsf_job_ids + "/" + timestamp + '-LSF_JOB_IDs.txt' # e.g. 2014_10_13-14.08.47-LSF_JOB_IDs.txt 
 ###################################### MAKE DIRS/SYMLINKs ######################################
 ### Make paths if they do not exists
-for path in [path_output_base, path_epi_results, path_jobs]: #KEEP ME UPDATED!
+for path in [path_output_base, path_epi_results, path_jobs, path_lsf_job_ids]: #KEEP ME UPDATED!
 	if not os.path.exists(path):
 		os.makedirs(path)
 
@@ -345,6 +352,9 @@ logger.info( "looking for previous calculated files..." )
 (results_missing, results_present) = find_completed_results(variable_elements, file_path_format_holder) # returns two LISTs
 	# IMPORTANT: ---> the function "find_completed_results()" returns "variable_elements" ("atomic" names)
 #pdb.set_trace()
+n_result_missing = len(results_missing)
+n_result_present = len(results_present)
+
 results_missing_chunks = list(chunks_generator(results_missing, n_jobs_per_bsub)) # MUST use list() and not []
 #pdb.set_trace()
 
@@ -355,8 +365,8 @@ n_jobs_in_batch = len(results_missing_chunks)
 processes = submit(results_missing_chunks)
 
 logger.info( "List of jobs to submit (results_missing):\n%s" % ( "\n".join(results_missing) ) ) # This will likely produce a lot of output. Keep it "ABOVE" the other print statements so it does not fill your terminal with output
-logger.info( "Number of total jobs to submit - sum over all batches (results_missing): %s" % len(results_missing) )
-logger.info( "Number of PREVIOUS COMPLETED jobs: %s" % len(results_present) )
+logger.info( "Number of total jobs to submit - sum over all batches (results_missing): %s" % n_result_missing )
+logger.info( "Number of PREVIOUS COMPLETED jobs: %s out of %s total jobs" % ( n_result_present,  n_result_present+n_result_missing) )
 logger.info( "IMPORTANT: n_jobs_in_batch=%s" % n_jobs_in_batch )
 logger.info( "IMPORTANT: n_jobs_per_bsub=%s" % n_jobs_per_bsub )
 
@@ -364,17 +374,20 @@ logger.info( "IMPORTANT: n_jobs_per_bsub=%s" % n_jobs_per_bsub )
 if True:
 	ans = ""
 	print "*** SAFETY CHECK ***"
-	print "You are about to submit %s jobs (%s in total) to the Broad Cluster" % ( n_jobs_in_batch, len(results_missing) ) #(%s jobs to run; %s jobs per bsub)
+	print "You are about to submit %s jobs (%s in total) to the Broad Cluster" % ( n_jobs_in_batch, n_result_missing ) #(%s jobs to run; %s jobs per bsub)
 	print "Plese confirm that this is want you want to do by typing 'yes'"
 	while ans != 'yes':
 	 	ans = raw_input("Confirm: ")
 	print "Ok let's start..."
 
 ###################################### RUN PROCESSES ######################################
-for p in processes:
-	p.run()
-	time.sleep(args.pause)
-
+#lsf_job_id = []
+with open(file_lsf_job_id, 'a') as f_lsf:
+	for p in processes:
+		p.run() # after the .run() is succesfull, the p.id attribute is set.
+		f_lsf.write(str(p.id)+" ") # space seperated
+		time.sleep(args.pause)
+#bjobs | egrep "week\s+node1747" | perl -ane 'print "$F[0] "'
 
 ### Finishing
 start_time_check_jobs = time.time()

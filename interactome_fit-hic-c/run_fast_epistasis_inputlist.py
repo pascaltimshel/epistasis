@@ -146,8 +146,8 @@ for count, probe in enumerate(jobs, start=1):
 	time_preFastEpistasis_elapsed = time.time() - time_preFastEpistasis_start
 	if p.returncode == 0:
 		print "preFastEpistasis done: %s" % time_preFastEpistasis_elapsed
-		(stdoutdata, stderrdata) = p.communicate() # note stderrdata is empty
-		print stdoutdata
+		#(stdoutdata, stderrdata) = p.communicate() # note stderrdata is empty
+		#print stdoutdata
 	else:
 		print "preFastEpistasis FAILED"
 		(stdoutdata, stderrdata) = p.communicate() # note stderrdata is empty
@@ -177,8 +177,8 @@ for count, probe in enumerate(jobs, start=1):
 	time_smpFastEpistasis_elapsed = time.time() - time_smpFastEpistasis_start
 	if p.returncode == 0:
 		print "smpFastEpistasis done: %s" % time_smpFastEpistasis_elapsed
-		(stdoutdata, stderrdata) = p.communicate() # note stderrdata is empty
-		print stdoutdata
+		#(stdoutdata, stderrdata) = p.communicate() # note stderrdata is empty
+		#print stdoutdata
 	else:
 		print "smpFastEpistasis FALIED"
 		(stdoutdata, stderrdata) = p.communicate() # note stderrdata is empty
@@ -208,8 +208,8 @@ for count, probe in enumerate(jobs, start=1):
 
 	if p.returncode == 0:
 		print "postFastEpistasis done"
-		(stdoutdata, stderrdata) = p.communicate() # note stderrdata is empty
-		print stdoutdata
+		#(stdoutdata, stderrdata) = p.communicate() # note stderrdata is empty
+		#print stdoutdata
 	else:
 		print "postFastEpistasis FAILED"
 		(stdoutdata, stderrdata) = p.communicate() # note stderrdata is empty
@@ -223,6 +223,13 @@ for count, probe in enumerate(jobs, start=1):
 		os.remove(bin_file)
 	else:
 		print "WARNING: no .bin file found!"
+
+	core_dumps = glob.glob("core.*")
+	if core_dumps: # if not empty
+		for core_dump in core_dumps:
+			core_dump_file_size_mb = os.path.getsize(core_dump)/(1024*1024.0)
+			print "WARNING: found core dump: %s (size=%s MB)" % (core_dump, core_dump_file_size_mb)
+			os.remove(core_dump)
 
 	################## Finishing ##################
 	time_probe_elapsed = time.time() - time_probe_start
