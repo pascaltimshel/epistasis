@@ -57,8 +57,8 @@ file_bim = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_m
 #file_interactions = "/cvar/jhlab/timshel/egcut/interactome/lift_findItersection.intersection.paste.updatedIDs"
 #file_interactions = "/cvar/jhlab/timshel/egcut/interactome/lift_findItersection.intersection.paste.clean.nosex.updatedIDs.interchromosomal"
 
-file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-06.txt"
-#file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-07.txt"
+#file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-06.txt"
+file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-07.txt"
 #file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-08.txt"
 #file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-09.txt"
 #file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-10.txt"
@@ -66,8 +66,8 @@ file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_t
 ##############################################################################################
 ### *IMPORTANT*: setting the specificiers for the data set. THIS IS USED IN path_base_out *###
 hic_data_set = "hIMR90"
-q_threshold = "q_1e-06" 
-#q_threshold = "q_1e-07"
+#q_threshold = "q_1e-06" 
+q_threshold = "q_1e-07"
 #q_threshold = "q_1e-08"
 #q_threshold = "q_1e-09"
 #q_threshold = "q_1e-10"
@@ -76,6 +76,14 @@ q_threshold = "q_1e-06"
 ## wc 12/09/2014
 #  2009553 = Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.bim
 #  2552493 = Prote_370k_251011.no_mixup.with_ETypes.chr_infered.bim
+
+###################################### SANITY CHECK ######################################
+if not q_threshold in file_interactions:
+	raise Exception( "ERROR: could not find '%s' (value of q_threshold) as substring in file_interactions=%s" % ( q_threshold, file_interactions ) )
+
+else:
+	print "OK: q_threshold is in file_interaction"
+
 
 ###################################### PARAMETERs ###################################### 
 arg_parser = argparse.ArgumentParser()
