@@ -25,13 +25,34 @@ setwd(wd)
 #9	rs4579584	20	rs2426193	-0.25225	49.39828	2.08928E-12	ILMN_1799744
 #9	rs4579584	20	rs7266126	-0.25303	49.61180	1.87383E-12	ILMN_1799744
 #4	rs7681358	11	rs17137547	-1.49101	72.67622	1.52763E-17	ILMN_1694385
-# --> 
-file.fastEpi_table <- "/Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/fastEpi_1e-10_0108_212539_cat_0109_121438/results.epi.qt.lm.combined"
+
+##################### Initial TABLES #####################
+### COMPLETE TABLE
+#file.fastEpi_table <- "/Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/fastEpi_1e-10_0108_212539/results.epi.qt.lm.combined.stripped"
+  # --> nrow=833144
+
+##################### Current TABLES #####################
+file.fastEpi_table <- "/Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8__150122_113919___results.epi.qt.lm.combined.txt"
+  # --> nrow=49827
+
+### READ table
 df.fastEpi <- read.delim(file.fastEpi_table, stringsAsFactors=F)#
 str(df.fastEpi)
 nrow(df.fastEpi)
 
-length(unique(df.fastEpi$SNP_A))
+### UNIQUE SNPs and probes
+SNP_A.unique <- unique(df.fastEpi$SNP_A); length(SNP_A.unique) # --> 6512
+SNP_B.unique <- unique(df.fastEpi$SNP_B); length(SNP_B.unique) # --> 6501
+SNP_AB.intersect <- intersect(SNP_A.unique, SNP_B.unique); length(SNP_AB.intersect) # --> 54
+SNP_AB.union <- union(SNP_A.unique, SNP_B.unique); length(SNP_AB.union) # --> 12959
+probes.unique <- unique(df.fastEpi$PHENOTYPE); length(probes.unique) # --> 1127
+# extract UNION snps
+#cat(SNP_AB.union, sep="\n", file=paste0(dirname(file.fastEpi_table),"/SNP_AB.union.txt"))
+
+
+### Count number of pairs below a certain p-value threshold
+n.passing <- sum(df.fastEpi$PVALUE<1e-11)
+n.passing/nrow(df.fastEpi)*100 # Percentage
 
 ### Checking for duplicates ###
 # --> *We need a sorted rsID to do this*
@@ -65,8 +86,11 @@ sum(duplicated(df.fastEpi.sorted_rsID)) #  all duplicated
 idx.duplicated <- duplicated(df.fastEpi.sorted_rsID[,c("SNP_A", "SNP_B", "PHENOTYPE")]) | duplicated(df.fastEpi.sorted_rsID[,c("SNP_A", "SNP_B", "PHENOTYPE")], fromLast=T)
 df.fastEpi.sorted_rsID.dup <- df.fastEpi.sorted_rsID[idx.duplicated, ]
 df.fastEpi.sorted_rsID.dup <- df.fastEpi.sorted_rsID.dup[with(df.fastEpi.sorted_rsID.dup, order(SNP_A, SNP_B)),]
+### write csv
+file.duplicated <- paste0(dirname(file.fastEpi_table), "/", "duplicated_SNP-probe_pairs.csv")
+file.duplicated
+#write.csv(df.fastEpi.sorted_rsID.dup, file=file.duplicated)
 
-df.fastEpi.sorted_rsID.dup[1:2,]
 
 ### **** ###
 df.fastEpi.sorted_rsID.unique <- unique(df.fastEpi.sorted_rsID)
@@ -79,10 +103,44 @@ df.fastEpi.sorted_rsID.unique
 ### Sort by p-value ###
 df.fastEpi.sorted <- df.fastEpi[order(df.fastEpi$PVALUE), ]
 head(df.fastEpi.sorted)
+### Write to csv
+file.fastEpi_table.p_value.sorted <- paste0(dirname(file.fastEpi_table), "/", "fastEpi_table.p_value.sorted.csv")
+file.fastEpi_table.p_value.sorted
+n.top <- 10000
+write.csv(df.fastEpi.sorted, file=file.fastEpi_table.p_value.sorted, row.names=F)
+write.csv(df.fastEpi.sorted[1:n.top,], file=paste0(dirname(file.fastEpi_table), "/", "fastEpi_table.p_value.sorted.top1000.csv"), row.names=F)
 
+
+n.top <- 1000
+df.fastEpi.sorted.n_top <- df.fastEpi.sorted[1:n.top, ]
+SNP_A.unique <- unique(df.fastEpi.sorted.n_top$SNP_A); length(SNP_A.unique) # --> 47
+SNP_B.unique <- unique(df.fastEpi.sorted.n_top$SNP_B); length(SNP_B.unique) # --> 37
+SNP_AB.intersect <- intersect(SNP_A.unique, SNP_B.unique); length(SNP_AB.intersect) # --> 0
+
+
+
+
+
+
+
+
+
+
+#################################### OBSERVATIONS ####################################
 ### Order of CHR: not sorted. This makes sense since we pooled all the SNPs from sorted interactions.
 all(df.fastEpi$CHR <= df.fastEpi$CHR.1)
 df.fastEpi$CHR <= df.fastEpi$CHR.1
+
+
+
+
+
+
+
+
+
+
+
 
 
 

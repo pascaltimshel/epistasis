@@ -41,6 +41,7 @@ time.per_probe <- n_tests.per_probe/120000
 time.per_probe
 n_probes <- 10000 # number of probes
 n_tests_total <- n_tests.per_probe * n_probes
+n_tests_total
 
 pval.nominal <- 0.05
 pval.corrected <- pval.nominal/n_tests_total
@@ -54,7 +55,9 @@ pval.corrected
 
 ### 1e-10 ###
 # n_tests.per_probe = 104492
+# n_tests_total = 1044920000
 # pval.corrected = 4.785055e-11
+
 
 # 120 000 epistasis tests per second
 
