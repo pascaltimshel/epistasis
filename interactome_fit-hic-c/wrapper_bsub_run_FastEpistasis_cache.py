@@ -98,6 +98,7 @@ def write_cmd_file(chunck, file_job):
 
 def test():
 	""" The .fastepistasis-2.05 needs to be loaded because this script submits jobs that requires it to be in the path """
+	
 	try:
 		FNULL = open(os.devnull, 'w')
 		subprocess.Popen(["smpFastEpistasis"], stdout=FNULL, stderr=subprocess.STDOUT)
@@ -220,8 +221,8 @@ args = ParseArguments()
 
 ###################################### Paramters ######################################
 # ***OBS: this is the NUMBER of interactions to run per job.
-n_jobs_per_bsub = 500 # 60 # --> RHEL WEEK
-#n_jobs_per_bsub = 25 # 100 # --> RHEL HOUR
+n_jobs_per_bsub = 100 #500 # 60 # --> RHEL WEEK
+#n_jobs_per_bsub = 4 #25 # 100 # --> RHEL HOUR
 #n_jobs_per_bsub = 100 # --> RHEL HOUR v. 2
 #n_jobs_per_bsub = 2000 # --> MEDPOP
 #n_jobs_per_bsub = 20 # --> CentOS HOUR
@@ -232,16 +233,16 @@ script2call = "/cvar/jhlab/timshel/git/epistasis/interactome_fit-hic-c/run_fast_
 ######################################  ######################################
 ### Overall parameters
 maf = "5"
-#interaction_width = "50000" # --> RHEL hour
-interaction_width = "500" # --> RHEL MEDPOP
+interaction_width = "50000" # --> RHEL hour
+#interaction_width = "500" # --> RHEL MEDPOP
 #interaction_width = "500" # --> RHEL hour v. 2
 #interaction_width = "10000" # --> CentOS hour
 #interaction_width = "10000"
 hic_dataset = "hIMR90"
-# q_threshold = "1e-09" # --> REL hour
+q_threshold = "1e-09" # --> REL hour
 #q_threshold = "1e-08" # --> CentOS hour
 #q_threshold = "1e-08" # --> RHEL hour v. 2
-q_threshold = "1e-06" # --> REL MEDPOP
+#q_threshold = "1e-06" # --> REL MEDPOP
 #q_threshold = "1e-10"
 
 ### Input BIM file: *UPS: keep this in sync!* ###
@@ -259,11 +260,11 @@ else:
 	print "OK - found the file_set file. Will create symlink soon..."
 
 ### Significance threshold: epi1 ###
-#epi1 = "1e-10" # string to set the significance thresshold
-#epi2 = "1e-10" # string to set the significance thresshold
+epi1 = "1e-10" # string to set the significance thresshold
+epi2 = "1e-10" # string to set the significance thresshold
 
-epi1 = "1e-8" # MEDPOP + RHEL hour v. 2
-epi2 = "1e-8" # MEDPOP + RHEL hour v. 2
+#epi1 = "1e-8" # MEDPOP + RHEL hour v. 2
+#epi2 = "1e-8" # MEDPOP + RHEL hour v. 2
 
 
 
