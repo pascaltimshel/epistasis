@@ -16,7 +16,7 @@ import pandas as pd
 import numpy as np # for plotting an array
 
 
-import memory_profiler
+#import memory_profiler
 
 ###################################### USAGE ######################################
 
@@ -33,7 +33,7 @@ import memory_profiler
 
 ################## Broad ##################
 ### Examples XX - hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10
-#python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/50000_snppool_hIMR90_q_1e-09 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-09.nperm_1000.txt --q_threshold 1e-09 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8/fastEpi_compiled/
+#python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/50000_snppool_hIMR90_q_1e-09 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-09.nperm_1000.txt --q_threshold 1e-09 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10/fastEpi_compiled
 
 
 
@@ -174,7 +174,7 @@ assert list(df_interaction_table_snps.columns.values) == ["interaction_ID", "chr
 # 3) Deque
 
 ###################################### MAIN LOOP ######################################
-@memory_profiler.profile
+#@memory_profiler.profile
 def populate_snp2interaction_dict():
 	SNP2interaction_dict = collections.defaultdict(set) # using SET()
 	#SNP2interaction_dict = collections.defaultdict(collections.OrderedDict) # OrderedDict is not a lot slower than a plain dict, but at least doubles the memory.
@@ -197,9 +197,10 @@ def populate_snp2interaction_dict():
 			#if interaction_no==100: break
 
 			try:
-				snps_A = df_interaction_table_snps["snps_A"][interaction_idx].split(";")
+				#snps_A = df_interaction_table_snps["snps_A"][interaction_idx].split(";")
 				snps_B = df_interaction_table_snps["snps_B"][elem].split(";")
-				snps = snps_A + snps_B # similar to .extend(). OBS: this list could potentially contain DUPLICATES. However, that should not be a problem
+				#snps = snps_A + snps_B # similar to .extend(). OBS: this list could potentially contain DUPLICATES. However, that should not be a problem
+				snps = snps_B
 			except AttributeError: # E.g. "AttributeError 'float' object has no attribute 'split'" when splitting "nan" ("nan" is type "float")")
 				pass
 				# --> Got AttributeError. Value is likely 'nan'. Will do NOTHING because this is ok! 
