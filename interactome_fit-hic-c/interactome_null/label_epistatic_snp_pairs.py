@@ -15,25 +15,17 @@ import collections
 import pandas as pd
 import numpy as np # for plotting an array
 
-
-import memory_profiler
-
 ###################################### USAGE ######################################
 
 #python gen_SNP2interaction_map.py --path_interaction_table XXX --file_null_table XXX --q_threshold XXX --path_main_out XXX
 
-################## OSX ##################
+
 ### Examples 1 - fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
 #python gen_SNP2interaction_map.py --path_interaction_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_snpsets/maf_5_sets/500_snppool_hIMR90_q_1e-08 --file_null_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-08.nperm_1000.txt --q_threshold 1e-08 --path_main_out /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
-# mprof run gen_SNP2interaction_map.py XXX
 
 ### Examples 2 - hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10 (not complete yet)
 #python gen_SNP2interaction_map.py --path_interaction_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_snpsets/maf_5_sets/50000_snppool_hIMR90_q_1e-09 --file_null_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-09.nperm_1000.txt --q_threshold 1e-09 --path_main_out /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10
 	# at null_192_1017 --> Segmentation fault: 11 (likely because it was using 6 GB memory)
-
-################## Broad ##################
-### Examples XX - hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10
-#python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/50000_snppool_hIMR90_q_1e-09 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-09.nperm_1000.txt --q_threshold 1e-09 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8/fastEpi_compiled/
 
 
 
@@ -44,30 +36,18 @@ import memory_profiler
 # ??
 
 ###################################### TODO ######################################
-# 1) Count the number of interactions for each SNP. (Plot histogram?)
-# 2) Think about an improved path to write files to: where should the files go?
-# 3) 
-# (consider writing out only interaction_identifiers were BOTH snps_A and snps_B are non-empty)
-
-### What we know:
-# 1) The histogram over experiments are uniform: this means that "hic" and "null" have the same number of tests, and thus SNPs, in them
 
 ###################################### TESTs to make ######################################
-# OK: check q_threshold match
-# OK: check equal length of null and df_interaction_table
-# check header of df_interaction_table: interaction_ID	chr_A	pos_A	chr_B	pos_B	setA_size	setB_size	snps_A	snps_B
 
 
 ###################################### FILE snippets ######################################
-################## file_null_table ##################
+################## file_fastepistasis_lm_combined ##################
 ### Example ### 
-# null_1	null_2	null_3	null_4	null_5	null_6	null_7	null_8	... LINES CONTINUE ...
-# 921	3140	55	1961	579	2484	1644	2225	2871	511	... LINES CONTINUE ...
-# 1291	1236	1770	2322	2281	72	1997	2259	2147	... LINES CONTINUE ...
-# 1986	1975	2361	1574	1998	636	1189	3392	3069	... LINES CONTINUE ...
-# 3147	401	725	650	607	814	1618	2510	2293	1726	3468	... LINES CONTINUE ...
-# 699	838	2342	1261	2277	2453	2378	767	2130	1340	... LINES CONTINUE ...
-# 3112	496	367	94	1944	2589	2829	1363	2430	1357	... LINES CONTINUE ...
+# CHR	SNP_A	CHR	SNP_B	BETA	CHISQ	PVALUE	PHENOTYPE
+# 11	rs1508531	11	rs4939298	-0.13990	33.32995	7.77755E-09	ILMN_1716816
+# 1	rs4650623	6	rs3798983	-0.22814	33.00383	9.19773E-09	ILMN_1716816
+# 1	rs4650623	6	rs3798982	-0.22814	33.00383	9.19773E-09	ILMN_1716816
+# 4	rs12501969	21	rs762173	-0.04258	32.96917	9.36321E-09	ILMN_1666935
 ### Expected format
 # a tab file with the *COLUMN NAMES* in the format: {experiment_type}_{experiment_no}
 # experiment_type:	{hic, null}
@@ -101,7 +81,7 @@ arg_parser.add_argument("--path_interaction_table", required=True, help="""
 	""")
 arg_parser.add_argument("--file_null_table", required=True, help="A full filename (path+filename) to the null table")
 arg_parser.add_argument("--q_threshold", required=True, help="The q-value threshold used. Formatting matters! Example: '1e-08'. This value is only used for validity check and forming output filenames. [PLEASE NOTE THAT THE CHECK IS NOT PERFECT!]")
-arg_parser.add_argument("--path_main_out", required=True, help="Main path to write output files. Path will be created if it does not exists. PASCAL RECOMMENDS USING the respective 'fastEpi_compiled' path for this purpose.")
+arg_parser.add_argument("--path_main_out", required=True, help="Main path to write output files. Path will be created if it does not exists.")
 args = arg_parser.parse_args()
 
 path_interaction_table = os.path.abspath(args.path_interaction_table)
@@ -134,11 +114,6 @@ if not re.search(q_threshold, file_null_table, flags=re.IGNORECASE): # re.search
 if not os.path.exists(path_main_out):
 	print "path_main_out did not exists. Will make new dir"
 	os.makedirs(path_main_out)
-else:
-	print "path_main_out={} exists".format(path_main_out)
-	ans = ""
-	while ans != "yes":
-		ans = raw_input("Do you want overwrite the content (type 'yes' to continue)? ")
 
 file_SNP2interaction_map = path_main_out + "/SNP2interaction_map.txt" # add information about origin of file
 file_bonferroni_correction = path_main_out + "/bonferroni_correction.txt"
@@ -156,86 +131,67 @@ df_interaction_table_snps = pd.read_csv(file_interaction_table_snps, sep="\t")
 ### Null table
 df_null_table = pd.read_csv(file_null_table, sep="\t")
 
-################## Print messages ##################
-print "len(df_interaction_table_snps): {}".format(len(df_interaction_table_snps))
-print "len(df_null_table): {}".format(len(df_null_table))
-
-################## Tests ##################
-### Check Equal Length Of Data Frames
-# The data frames must/should have equal length (rows) because they contain the same number of interactions (rows)
-assert len(df_interaction_table_snps) == len(df_null_table)
-
-assert list(df_interaction_table_snps.columns.values) == ["interaction_ID", "chr_A", "pos_A", "chr_B", "pos_B", "setA_size", "setB_size", "snps_A", "snps_B"]
-
 ###################################### Initialize container ######################################
 ### Types of container:
 # 1) Defaultdict + set
 # 2) Defaultdict + OrderedDict
 # 3) Deque
 
+SNP2interaction_dict = collections.defaultdict(set) # using SET()
+#SNP2interaction_dict = collections.defaultdict(collections.OrderedDict) # OrderedDict is not a lot slower than a plain dict, but at least doubles the memory.
+#SNP2interaction_dict = {}
+
+bonferroni_correction_dict = collections.defaultdict(int)
+#SNP_interaction_count_dict = {}
+
 ###################################### MAIN LOOP ######################################
-@memory_profiler.profile
-def populate_snp2interaction_dict():
-	SNP2interaction_dict = collections.defaultdict(set) # using SET()
-	#SNP2interaction_dict = collections.defaultdict(collections.OrderedDict) # OrderedDict is not a lot slower than a plain dict, but at least doubles the memory.
-	#SNP2interaction_dict = {}
+for column_name, series in df_null_table.iteritems(): # Iterator over (column, series) pairs
+	print column_name
+	series_corrected_offset = series-1 # We need to subtract one from the index because Pandas/Python is zero-based and R is one-based
+	for interaction_no, elem in enumerate(series_corrected_offset, start=1):
+		## Note that interaction_no starts at one! This is because we want the interaction IDs to run from 1...N_interactions.
+		
+		### This is the index to access rows/interaction in Pandas Dataframes
+		interaction_idx = interaction_no - 1
 
-	bonferroni_correction_dict = collections.defaultdict(int)
-	#SNP_interaction_count_dict = {}
-	
-	for column_name, series in df_null_table.iteritems(): # Iterator over (column, series) pairs
-		print column_name
-		series_corrected_offset = series-1 # We need to subtract one from the index because Pandas/Python is zero-based and R is one-based
-		for interaction_no, elem in enumerate(series_corrected_offset, start=1):
-			## Note that interaction_no starts at one! This is because we want the interaction IDs to run from 1...N_interactions.
+		snps = list() # Default value - empty list. Will be evaluated as False in boolean context.
+		
+		#if interaction_no==100: break
+
+		try:
+			snps_A = df_interaction_table_snps["snps_A"][interaction_idx].split(";")
+			snps_B = df_interaction_table_snps["snps_B"][elem].split(";")
+			snps = snps_A + snps_B # similar to .extend(). OBS: this list could potentially contain DUPLICATES. However, that should not be a problem
+		except AttributeError: # E.g. "AttributeError 'float' object has no attribute 'split'" when splitting "nan" ("nan" is type "float")")
+			pass
+			# --> Got AttributeError. Value is likely 'nan'. Will do NOTHING because this is ok! 
+
+		### Constructing interaction_identifier
+		# column_name example: hic_1, null_1, null_2, ...
+		experiment_type = column_name.split("_")[0] # {hic, null}
+		experiment_no = column_name.split("_")[1] # {1, 2, .., N_perm}
+		interaction_identifier = "{experiment_type}_{experiment_no}_{interaction_no}".format(experiment_type=experiment_type, experiment_no=experiment_no, interaction_no=interaction_no)
+		print interaction_identifier
+		
+		for snp in snps: 
+			### Remarks:
+			# "snps" may contain duplicates if snps_A and snps_B overlap because we are USING LIST PLUS (+) OPERATOR: snps_A + snps_B
+			# duplicates is not a problem for this code. Just think about it.
+			# duplicates should not exists when using INTER-CHROMOSOMAL interactions
+
+			SNP2interaction_dict[snp].add(interaction_identifier) # using set()
+			#SNP2interaction_dict[snp][interaction_identifier] = 1 # using OrderedDict
+			#SNP2interaction_dict[snp] = 1
+
+		################## Bonferroni correction calculation ##################
+		# Purpose: we multiply the number of SNPs in setA and setB to get the number of tests.
+		# Because I choose to generate the the "null" by shuffling B and KEEPING A FIXED, both "hic" and "null" will have the same setA_size for a given interaction number.
+		# setB is a ordered sequence, 1..N_interactions, for "hic". setB is shuffled for the "null".
+		# IMPORTANT: *elem* is the INDEX pointing to a interaction in the df_interaction_table_snps.
+		# *elem* comes from series_corrected_offset where the numbers are corrected to be zero-based
+		tmp_correction = df_interaction_table_snps.ix[interaction_idx,"setA_size"] * df_interaction_table_snps.ix[elem,"setB_size"]
+		bonferroni_correction_dict[column_name] += tmp_correction
 			
-			### This is the index to access rows/interaction in Pandas Dataframes
-			interaction_idx = interaction_no - 1
-
-			snps = list() # Default value - empty list. Will be evaluated as False in boolean context.
-			
-			#if interaction_no==100: break
-
-			try:
-				snps_A = df_interaction_table_snps["snps_A"][interaction_idx].split(";")
-				snps_B = df_interaction_table_snps["snps_B"][elem].split(";")
-				snps = snps_A + snps_B # similar to .extend(). OBS: this list could potentially contain DUPLICATES. However, that should not be a problem
-			except AttributeError: # E.g. "AttributeError 'float' object has no attribute 'split'" when splitting "nan" ("nan" is type "float")")
-				pass
-				# --> Got AttributeError. Value is likely 'nan'. Will do NOTHING because this is ok! 
-
-			### Constructing interaction_identifier
-			# column_name example: hic_1, null_1, null_2, ...
-			experiment_type = column_name.split("_")[0] # {hic, null}
-			experiment_no = column_name.split("_")[1] # {1, 2, .., N_perm}
-			interaction_identifier = "{experiment_type}_{experiment_no}_{interaction_no}".format(experiment_type=experiment_type, experiment_no=experiment_no, interaction_no=interaction_no)
-			print interaction_identifier
-			
-			for snp in snps: 
-				### Remarks:
-				# "snps" may contain duplicates if snps_A and snps_B overlap because we are USING LIST PLUS (+) OPERATOR: snps_A + snps_B
-				# duplicates is not a problem for this code. Just think about it.
-				# duplicates should not exists when using INTER-CHROMOSOMAL interactions
-
-				SNP2interaction_dict[snp].add(interaction_identifier) # using set()
-				#SNP2interaction_dict[snp][interaction_identifier] = 1 # using OrderedDict
-				#SNP2interaction_dict[snp] = 1
-
-			################## Bonferroni correction calculation ##################
-			# Purpose: we multiply the number of SNPs in setA and setB to get the number of tests.
-			# Because I choose to generate the the "null" by shuffling B and KEEPING A FIXED, both "hic" and "null" will have the same setA_size for a given interaction number.
-			# setB is a ordered sequence, 1..N_interactions, for "hic". setB is shuffled for the "null".
-			# IMPORTANT: *elem* is the INDEX pointing to a interaction in the df_interaction_table_snps.
-			# *elem* comes from series_corrected_offset where the numbers are corrected to be zero-based
-			tmp_correction = df_interaction_table_snps.ix[interaction_idx,"setA_size"] * df_interaction_table_snps.ix[elem,"setB_size"]
-			bonferroni_correction_dict[column_name] += tmp_correction
-
-		# return (SNP2interaction_dict, bonferroni_correction_dict) # FOR TESTING QUICKLY!
-	return (SNP2interaction_dict, bonferroni_correction_dict)
-
-
-(SNP2interaction_dict, bonferroni_correction_dict) = populate_snp2interaction_dict()
-
 ###################################### Writing files ######################################
 
 # print "Writing interactions_per_snp"
@@ -260,36 +216,6 @@ with open(file_SNP2interaction_map, 'w') as fh_map:
 		set_string = ";".join(sorted(SNP2interaction_dict[snp])) # USING set() sorted set
 		#set_string = ";".join(SNP2interaction_dict[snp]) # # USING OrderedDict()
 		fh_map.write( "{}\t{}\t{}\n".format(snp, len(SNP2interaction_dict[snp]), set_string) )
-
-
-###################################### Alternative methods for writing files ######################################
-
-################## Pickle ##################
-
-try:
-	import cPickle as pickle # NO subclass - cPickle is written in C.
-except:
-	import pickle
-
-file_SNP2interaction_map_pickle = path_main_out + "/SNP2interaction_map.pickle" # add information about origin of file
-
-with open(file_SNP2interaction_map_pickle, 'wb') as f:
-	pickle.dump(SNP2interaction_dict, f, protocol=2) # pickle.dump(obj, file[, protocol]). pickle.HIGHEST_PROTOCOL
-
-### File size
-#SNP2interaction_map_pickle: 74 KB
-#SNP2interaction_map.txt: 42 KB
-
-################## JSON ##################
-
-# import json
-# OBS: Python sets are not json serializable: http://stackoverflow.com/questions/8230315/python-sets-are-not-json-serializable
-
-# file_SNP2interaction_map_json = path_main_out + "/SNP2interaction_map.json" # add information about origin of file
-
-# with open(file_SNP2interaction_map_json, 'w') as f:
-# 	json.dump(SNP2interaction_dict, f)
-# 	#Alternative: json.dump(obj, fp, indent=None, separators=2, sort_keys=True)
 
 
 ###################################### Plotting ######################################
