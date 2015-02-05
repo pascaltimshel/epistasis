@@ -15,8 +15,19 @@ import collections
 import pandas as pd
 import numpy as np # for plotting an array
 
+try:
+	import cPickle as pickle # NO subclass - cPickle is written in C.
+except:
+	print "loaded pickle - could not load cPickle..."
+	import pickle
 
-#import memory_profiler
+import time
+
+import memory_profiler; import psutil # OBS: the program RUN EXTREMELY SLOW when memory_profiling WITHOUT psutil. To install pip in homedir on a server: "pip install -user psutil"
+	### See warning
+	#/home/unix/ptimshel/.local/lib/python2.7/site-packages/memory_profiler.py:62: UserWarning: psutil module not found. memory_profiler will be slow
+	#  warnings.warn("psutil module not found. memory_profiler will be slow")
+
 
 ###################################### USAGE ######################################
 
@@ -32,8 +43,15 @@ import numpy as np # for plotting an array
 	# at null_192_1017 --> Segmentation fault: 11 (likely because it was using 6 GB memory)
 
 ################## Broad ##################
-### Examples XX - hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10
+### hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10
 #python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/50000_snppool_hIMR90_q_1e-09 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-09.nperm_1000.txt --q_threshold 1e-09 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10/fastEpi_compiled
+
+### hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
+#python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/500_snppool_hIMR90_q_1e-08 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-08.nperm_1000.txt --q_threshold 1e-08 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8/fastEpi_compiled
+
+### hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8
+#python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/500_snppool_hIMR90_q_1e-06 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-06.nperm_1000.txt --q_threshold 1e-06 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8/fastEpi_compiled
+
 
 
 
@@ -139,6 +157,7 @@ else:
 	ans = ""
 	while ans != "yes":
 		ans = raw_input("Do you want overwrite the content (type 'yes' to continue)? ")
+	print # add extra newline
 
 file_SNP2interaction_map = path_main_out + "/SNP2interaction_map.txt" # add information about origin of file
 file_bonferroni_correction = path_main_out + "/bonferroni_correction.txt"
@@ -174,6 +193,7 @@ assert list(df_interaction_table_snps.columns.values) == ["interaction_ID", "chr
 # 3) Deque
 
 ###################################### MAIN LOOP ######################################
+
 #@memory_profiler.profile
 def populate_snp2interaction_dict():
 	SNP2interaction_dict = collections.defaultdict(set) # using SET()
@@ -184,7 +204,8 @@ def populate_snp2interaction_dict():
 	#SNP_interaction_count_dict = {}
 	
 	for column_name, series in df_null_table.iteritems(): # Iterator over (column, series) pairs
-		print column_name
+		print "COLUMN_NAME: {}".format(column_name)
+		time_start = time.time()
 		series_corrected_offset = series-1 # We need to subtract one from the index because Pandas/Python is zero-based and R is one-based
 		for interaction_no, elem in enumerate(series_corrected_offset, start=1):
 			## Note that interaction_no starts at one! This is because we want the interaction IDs to run from 1...N_interactions.
@@ -197,14 +218,16 @@ def populate_snp2interaction_dict():
 			#if interaction_no==100: break
 
 			try:
-				#snps_A = df_interaction_table_snps["snps_A"][interaction_idx].split(";")
+				snps_A = df_interaction_table_snps["snps_A"][interaction_idx].split(";")
 				snps_B = df_interaction_table_snps["snps_B"][elem].split(";")
-				#snps = snps_A + snps_B # similar to .extend(). OBS: this list could potentially contain DUPLICATES. However, that should not be a problem
-				snps = snps_B
+				snps = snps_A + snps_B # similar to .extend(). OBS: this list could potentially contain DUPLICATES. However, that should not be a problem
+				#snps = snps_B
 			except AttributeError: # E.g. "AttributeError 'float' object has no attribute 'split'" when splitting "nan" ("nan" is type "float")")
 				pass
 				# --> Got AttributeError. Value is likely 'nan'. Will do NOTHING because this is ok! 
 
+			#print "Got {} SNPs in 'snps'".format(len(snps))
+			
 			### Constructing interaction_identifier
 			# column_name example: hic_1, null_1, null_2, ...
 			experiment_type = column_name.split("_")[0] # {hic, null}
@@ -231,11 +254,15 @@ def populate_snp2interaction_dict():
 			tmp_correction = df_interaction_table_snps.ix[interaction_idx,"setA_size"] * df_interaction_table_snps.ix[elem,"setB_size"]
 			bonferroni_correction_dict[column_name] += tmp_correction
 
-		# return (SNP2interaction_dict, bonferroni_correction_dict) # FOR TESTING QUICKLY!
+		time_elapsed = time.time() - time_start
+		print "Elapsed time for one experiment: {} s ({} min)".format( time_elapsed, time_elapsed/60 )
+		#return (SNP2interaction_dict, bonferroni_correction_dict) # FOR TESTING QUICKLY!
 	return (SNP2interaction_dict, bonferroni_correction_dict)
 
-
+time_start_populate_dict = time.time()
 (SNP2interaction_dict, bonferroni_correction_dict) = populate_snp2interaction_dict()
+time_elapsed_populate_dict = time.time() - time_start_populate_dict
+print "Elapsed time populate_snp2interaction_dict(): {} s ({} min)".format( time_elapsed_populate_dict, time_elapsed_populate_dict/60 )
 
 ###################################### Writing files ######################################
 
@@ -266,11 +293,6 @@ with open(file_SNP2interaction_map, 'w') as fh_map:
 ###################################### Alternative methods for writing files ######################################
 
 ################## Pickle ##################
-
-try:
-	import cPickle as pickle # NO subclass - cPickle is written in C.
-except:
-	import pickle
 
 file_SNP2interaction_map_pickle = path_main_out + "/SNP2interaction_map.pickle" # add information about origin of file
 

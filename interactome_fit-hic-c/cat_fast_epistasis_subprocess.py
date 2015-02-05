@@ -106,7 +106,7 @@ print "DONE globbing LIST OF probes from path e.g.: %s" % probes[0] # * ..perhap
 # CONCLUSION: SKIP the first TWO lines!
 
 ## Open combined file for writing ##
-f_combined = open(file_lm_combined, 'a') # write in MAIN DIR
+f_combined = open(file_lm_combined, 'w') # write in MAIN DIR
 header = "CHR\tSNP_A\tCHR\tSNP_B\tBETA\tCHISQ\tPVALUE\tPHENOTYPE" # NOTICE: the EXTRA FIELD (PHENOTYPE)
 f_combined.write(header+"\n")
 
