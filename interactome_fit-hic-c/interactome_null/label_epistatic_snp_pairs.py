@@ -15,18 +15,27 @@ import collections
 import pandas as pd
 import numpy as np # for plotting an array
 
+try:
+	import cPickle as pickle # NO subclass - cPickle is written in C.
+except:
+	print "loaded pickle - could not load cPickle..."
+	import pickle
+
+import glob
+
+import resource # to allow enough filehandles to be opened
+
+###################################### CONSTANTS ######################################
+
+N_PHENOTYPES_TESTED = 9269
+ALPHA = 0.05
+
 ###################################### USAGE ######################################
 
-#python gen_SNP2interaction_map.py --path_interaction_table XXX --file_null_table XXX --q_threshold XXX --path_main_out XXX
+#python label_epistatic_snp_pairs.py --path_main_input XXX
 
-
-### Examples 1 - fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
-#python gen_SNP2interaction_map.py --path_interaction_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_snpsets/maf_5_sets/500_snppool_hIMR90_q_1e-08 --file_null_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-08.nperm_1000.txt --q_threshold 1e-08 --path_main_out /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
-
-### Examples 2 - hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10 (not complete yet)
-#python gen_SNP2interaction_map.py --path_interaction_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_snpsets/maf_5_sets/50000_snppool_hIMR90_q_1e-09 --file_null_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-09.nperm_1000.txt --q_threshold 1e-09 --path_main_out /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10
-	# at null_192_1017 --> Segmentation fault: 11 (likely because it was using 6 GB memory)
-
+### Example
+#python label_epistatic_snp_pairs.py --path_main_input /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
 
 
 ###################################### SYNOPSIS ######################################
@@ -35,7 +44,23 @@ import numpy as np # for plotting an array
 ### Output files
 # ??
 
+
 ###################################### TODO ######################################
+
+### Analysis to run
+# 1) Run label_epistatic_snp_pairs.py on 
+	# a) hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8
+
+### Add-on for the script
+# 1) Calculate empirical p-value based on different criteria:
+	# a) No filter. Do not consider bonferroni correction
+	# b) Count only significant interactions based on bonferroni calculations
+	# c) Same as b) but "prune" to keep only one pair from each "experiment_interaction_identifer"
+# 2) Generate (scripted) histogram for empirical p-value. Indicate position of observed hic statistic
+
+### Additinal
+# x) Run on IMR90
+
 
 ###################################### TESTs to make ######################################
 
@@ -49,222 +74,251 @@ import numpy as np # for plotting an array
 # 1	rs4650623	6	rs3798982	-0.22814	33.00383	9.19773E-09	ILMN_1716816
 # 4	rs12501969	21	rs762173	-0.04258	32.96917	9.36321E-09	ILMN_1666935
 ### Expected format
-# a tab file with the *COLUMN NAMES* in the format: {experiment_type}_{experiment_no}
-# experiment_type:	{hic, null}
-# experiment_no:	{1, 2, .., N_perm}
-# e.g. hic_1 or null_1, null_2, ..
+# THIS IS A TAB SEPERATED FILE
 
-################## file_interaction_table_snps ##################
-### Note that columns "snps_A" and "snps_B" can be empty
-# interaction_ID	chr_A	pos_A	chr_B	pos_B	setA_size	setB_size	snps_A	snps_B
-# interaction_1	10	100515000	15	100515000	24	11	rs7912656;rs7913008;rs11189802;rs11189803;rs7474758;rs10786469;rs10883191;rs11189804;rs2065877;rs4582899;rs11189811;rs7902691;rs7906326;rs2801410;rs11189812;rs1336503;rs1336505;rs2785218;rs2801392;rs10883197;rs10883198;rs2785219;rs2801393;rs11189814	rs3784812;rs7172796;rs7172808;rs8039168;rs8040533;rs4489968;rs7172038;rs7178084;rs11634550;rs3940418;rs16957846
-# interaction_2	3	52755000	10	52755000	6	7	rs11130323;rs2268026;rs2072390;rs13082208;rs13082960;rs2336545	rs7919460;rs10883534;rs10883535;rs12254876;rs7071427;rs7911997;rs7900763
-# interaction_3	3	50495000	10	50495000	9	26	rs916288;rs736471;rs12492113;rs1467914;rs6786523;rs12494849;rs1467913;rs9867588;rs763030	rs12777801;rs7094916;rs17221456;rs17221463;rs10737004;rs7070724;rs7095853;rs7900801;rs7071250;rs7918118;rs2242271;rs7076107;rs10752022;rs11253558;rs11253559;rs2306409;rs11253560;rs7099607;rs2620942;rs7917055;rs1871621;rs11253564;rs12415759;rs2387213;rs2306408;rs11253567
-# interaction_4	10	103175000	17	103175000	16	4	rs12355803;rs12258171;rs11191002;rs10786635;rs10159775;rs10883648;rs10883649;rs4917940;rs7082055;rs7082129;rs11191009;rs10883650;rs4919545;rs7900797;rs10786636;rs12261987	rs12944420;rs12603358;rs11654121;rs4792930
-# interaction_5	10	103255000	15	103255000	10	4	rs9420832;rs11191030;rs4244345;rs9420838;rs9420839;rs9420843;rs9420847;rs9419921;rs9325503;rs12769629	rs963375;rs4777503;rs10438367;rs17823279
-# interaction_6	10	10345000	22	10345000	2	14	rs1413288;rs7905520	rs139513;rs139515;rs5751071;rs5751072;rs139516;rs2284079;rs139519;rs139520;rs2235852;rs139525;rs139526;rs139528;rs8139515;rs60171
-# interaction_7	3	110875000	10	110875000	7	0	rs1732207;rs12492614;rs1614658;rs1729585;rs1406493;rs1113042;rs1358591	
+################## file_SNP2interaction_map ##################
+### FORMAT: pickled! (or perhaps text)
+
+################## file_bonferroni_correction ##################
+### Example
+# hic_1   4609175
+# null_1  4486950
+# null_10 4511100
+# null_100        4541756
+### FORMAT: two column, tab seperated. [BTW: the file is alphabetically sorted by the first column]
 
 
 ###################################### PARAMETERs ###################################### 
 arg_parser = argparse.ArgumentParser()
-arg_parser.add_argument("--path_interaction_table", required=True, help="""
-	*Main* path where the interaction table sits. E.g. XXX/10000_snppool_hIMR90_q_1e-08 and NOT XXXX/10000_snppool_hIMR90_q_1e-08/stats/df_interaction_table_snps.txt
-	Expected folder organization in path_interaction_table:
-	<path_interaction_table>/
-		snp_sets/ [optional]
-		figs/ [optional]
-		stats/ [required!]
-			df_interaction_table_snps.txt
-			MORE FILES...
-		errors/ [optional]
+arg_parser.add_argument("--path_main_input", required=True, help="""
+	*Main* path where the FastEpistasis *COMPILED* results lives.
+	Expected folder organization in path_main_input:
+	<path_main_input>/ (e.g. fastEpi_compiled)
+			XXX___probe_epistatic_count.txt
+			XXX___results.epi.qt.lm.combined.txt	[*required*]
+			XXX___stat_file.txt
+			SNP2interaction_map/					[*required*]
+				SNP2interaction_map.pickle 			[*required*]
+				bonferroni_correction.txt 			[*required*] - used for reading the "experiments" (i.e. get the names of the null and hic)
+				MORE_FILES...
+
+	The program relies on the *specific names* in path_main_input (fastEpi_compiled) to match the specified pattern.
 	""")
-arg_parser.add_argument("--file_null_table", required=True, help="A full filename (path+filename) to the null table")
-arg_parser.add_argument("--q_threshold", required=True, help="The q-value threshold used. Formatting matters! Example: '1e-08'. This value is only used for validity check and forming output filenames. [PLEASE NOTE THAT THE CHECK IS NOT PERFECT!]")
-arg_parser.add_argument("--path_main_out", required=True, help="Main path to write output files. Path will be created if it does not exists.")
 args = arg_parser.parse_args()
 
-path_interaction_table = os.path.abspath(args.path_interaction_table)
-file_null_table = os.path.abspath(args.file_null_table)
-q_threshold = args.q_threshold
-path_main_out = os.path.abspath(args.path_main_out) + "/SNP2interaction_map"
+path_main_input = os.path.abspath(args.path_main_input)
 
-file_interaction_table_snps = path_interaction_table+"/stats/df_interaction_table_snps.txt"
+################## Set output filenames ##################
+path_main_out = path_main_input + "/assigned" # dir # hic_hypothesis_testing
+path_out_epistatic_results = path_main_out + "/epistatic_results" # dir
+extension_epistatic_results = "lm.combined.txt" # file extension name
+file_epistatic_counts = path_main_out + "/epistatic_counts.txt"
+#file_epistatic_counts_significant = path_main_out + "/epistatic_counts_significant.txt"
+
+################## Get input files ##################
+### Get FastEpistasis compiled result file - GLOBBING ON FILENAME PATTERN
+glob_lm_file = glob.glob(path_main_input+"/*lm.combined.txt")
+if not len(glob_lm_file) == 1:
+	raise Exception( "glob_lm_file does not contain EXACTLY one matching file. Matches are:\n[{}]".format("\n".join(glob_lm_file)) )
+file_fastepistasis_lm_combined = glob_lm_file[0] # because of the above check, we know that the list only contains one element
+
+file_SNP2interaction_map = path_main_input + "/SNP2interaction_map/SNP2interaction_map.pickle"
+file_bonferroni_correction = path_main_input + "/SNP2interaction_map/bonferroni_correction.txt"
 
 ###################################### INITIAL Error checks ######################################
 
 ################## Check that files exists ##################
-if not os.path.exists(file_interaction_table_snps):
-	raise Exception("file_interaction_table_snps does not exists: %s" % file_interaction_table_snps)
-if not os.path.exists(file_null_table):
-	raise Exception("file_null_table does not exists: %s" % file_null_table)
-
-################## Make sure that q_threshold and the input files/paths match ##################
-# This script is only sensitive to the correct q_threshold because we need the null and df_interaction_table_snps to match up. The length of the files must be equal
-if not re.search(q_threshold, path_interaction_table, flags=re.IGNORECASE): # re.search(pattern, string, flags=0). The re.search function returns a search object on success, None on failure.
-	print "q_threshold", q_threshold 
-	print "path_interaction_table", path_interaction_table
-	raise Exception("Could regex match q_threshold pattern in *path_interaction_table*. Check that the q_threshold is correct")
-if not re.search(q_threshold, file_null_table, flags=re.IGNORECASE): # re.search(pattern, string, flags=0). The re.search function returns a search object on success, None on failure.
-	raise Exception("Could regex match q_threshold pattern in *file_null_table*. Check that the q_threshold is correct")
-
-
+if not os.path.exists(file_SNP2interaction_map):
+	raise Exception("file_SNP2interaction_map does not exists: %s" % file_SNP2interaction_map)
 
 ###################################### OUTPUT ######################################
-if not os.path.exists(path_main_out):
-	print "path_main_out did not exists. Will make new dir"
-	os.makedirs(path_main_out)
+if os.path.exists(path_main_out):
+	print "path_main_out={} exists".format(path_main_out)
+	ans = ""
+	while ans != "yes":
+		ans = raw_input("Do you want overwrite the content (type 'yes' to continue)? ")
+	print # add extra newline
 
-file_SNP2interaction_map = path_main_out + "/SNP2interaction_map.txt" # add information about origin of file
-file_bonferroni_correction = path_main_out + "/bonferroni_correction.txt"
-#file_interactions_per_snp = path_main_out + "/interactions_per_snp.txt"
+################## *Make OUTPUT dirs* ##################
+for path in [path_main_out, path_out_epistatic_results]:
+	if not os.path.exists(path):
+		os.makedirs(path)
 
-file_fig_n_tests_barplot = path_main_out + "/fig_n_tests_barplot.pdf"
-file_fig_interactions_per_snp_histogram = path_main_out + "/fig_interactions_per_snp_histogram.pdf"
+###################################### Read/Load input filesfile_SNP2interaction_map ######################################
 
+with open(file_SNP2interaction_map, 'r') as fh: # perhaps read the pickle file in binary mode.
+	SNP2interaction_dict = pickle.load(fh)
 
+###################################### Open files ######################################
 
-###################################### READ FILES ######################################
-### Interaction table with SNPs
-df_interaction_table_snps = pd.read_csv(file_interaction_table_snps, sep="\t")
+#resource.getrlimit(resource.RLIMIT_NOFILE)
+#resource.setrlimit(resource.RLIMIT_NOFILE, (500,-1))
 
-### Null table
-df_null_table = pd.read_csv(file_null_table, sep="\t")
+soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+print "SYSTEM INFO: number of files this process can open: (resource.RLIMIT_NOFILE, soft limit): {}".format(soft)
+resource.setrlimit(resource.RLIMIT_NOFILE, (9999, hard)) # *CHANGING SOFT LIMIT* to 9999 (abitrary high number)
+soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+print "SYSTEM INFO - UPDATED: number of files this process can open: (resource.RLIMIT_NOFILE, soft limit): {}".format(soft)
 
-###################################### Initialize container ######################################
-### Types of container:
-# 1) Defaultdict + set
-# 2) Defaultdict + OrderedDict
-# 3) Deque
+################## Open filehandles ##################
+experiment_identifier_fh_dict = {}
+bonferroni_correction_dict = {}
 
-SNP2interaction_dict = collections.defaultdict(set) # using SET()
-#SNP2interaction_dict = collections.defaultdict(collections.OrderedDict) # OrderedDict is not a lot slower than a plain dict, but at least doubles the memory.
-#SNP2interaction_dict = {}
-
-bonferroni_correction_dict = collections.defaultdict(int)
-#SNP_interaction_count_dict = {}
-
-###################################### MAIN LOOP ######################################
-for column_name, series in df_null_table.iteritems(): # Iterator over (column, series) pairs
-	print column_name
-	series_corrected_offset = series-1 # We need to subtract one from the index because Pandas/Python is zero-based and R is one-based
-	for interaction_no, elem in enumerate(series_corrected_offset, start=1):
-		## Note that interaction_no starts at one! This is because we want the interaction IDs to run from 1...N_interactions.
+print "Will now open filehandles in writing mode for assigning results.."
+with open(file_bonferroni_correction, 'r') as fh:
+	for line in fh:
+		fields = line.strip().split()
 		
-		### This is the index to access rows/interaction in Pandas Dataframes
-		interaction_idx = interaction_no - 1
+		### Get identifier
+		experiment_identifier = fields[0]
 
-		snps = list() # Default value - empty list. Will be evaluated as False in boolean context.
-		
-		#if interaction_no==100: break
+		### Set bonferroni correction - *IMPORTANT*
+		bonferroni_correction_dict[experiment_identifier] = ALPHA/(int(fields[1])*N_PHENOTYPES_TESTED) # <-- FLOAT. alpha/(N_epistasis_tests*N_phenotypes_tests)
 
-		try:
-			snps_A = df_interaction_table_snps["snps_A"][interaction_idx].split(";")
-			snps_B = df_interaction_table_snps["snps_B"][elem].split(";")
-			snps = snps_A + snps_B # similar to .extend(). OBS: this list could potentially contain DUPLICATES. However, that should not be a problem
-		except AttributeError: # E.g. "AttributeError 'float' object has no attribute 'split'" when splitting "nan" ("nan" is type "float")")
-			pass
-			# --> Got AttributeError. Value is likely 'nan'. Will do NOTHING because this is ok! 
+		### Set filename
+		tmp_filename = "{path}/{basename}.{ext}".format(path=path_out_epistatic_results, basename=experiment_identifier, ext=extension_epistatic_results)
+		tmp_fh = open(tmp_filename, 'w')
 
-		### Constructing interaction_identifier
-		# column_name example: hic_1, null_1, null_2, ...
-		experiment_type = column_name.split("_")[0] # {hic, null}
-		experiment_no = column_name.split("_")[1] # {1, 2, .., N_perm}
-		interaction_identifier = "{experiment_type}_{experiment_no}_{interaction_no}".format(experiment_type=experiment_type, experiment_no=experiment_no, interaction_no=interaction_no)
-		print interaction_identifier
-		
-		for snp in snps: 
-			### Remarks:
-			# "snps" may contain duplicates if snps_A and snps_B overlap because we are USING LIST PLUS (+) OPERATOR: snps_A + snps_B
-			# duplicates is not a problem for this code. Just think about it.
-			# duplicates should not exists when using INTER-CHROMOSOMAL interactions
+		experiment_identifier_fh_dict[experiment_identifier] = tmp_fh # e.g. experiment_identifier_fh_dict['null_1'] = <FILE_HANDLE>
 
-			SNP2interaction_dict[snp].add(interaction_identifier) # using set()
-			#SNP2interaction_dict[snp][interaction_identifier] = 1 # using OrderedDict
-			#SNP2interaction_dict[snp] = 1
+print "Opened {} filehandles".format(len(experiment_identifier_fh_dict))
 
-		################## Bonferroni correction calculation ##################
-		# Purpose: we multiply the number of SNPs in setA and setB to get the number of tests.
-		# Because I choose to generate the the "null" by shuffling B and KEEPING A FIXED, both "hic" and "null" will have the same setA_size for a given interaction number.
-		# setB is a ordered sequence, 1..N_interactions, for "hic". setB is shuffled for the "null".
-		# IMPORTANT: *elem* is the INDEX pointing to a interaction in the df_interaction_table_snps.
-		# *elem* comes from series_corrected_offset where the numbers are corrected to be zero-based
-		tmp_correction = df_interaction_table_snps.ix[interaction_idx,"setA_size"] * df_interaction_table_snps.ix[elem,"setB_size"]
-		bonferroni_correction_dict[column_name] += tmp_correction
+################## Open *ADDITONAL* filehandles ##################
+
+### Filenames
+file_multiple_assignments = "{path}/{basename}.{ext}".format(path=path_out_epistatic_results, basename="multiple_assigments", ext=extension_epistatic_results)
+file_unassigned = "{path}/{basename}.{ext}".format(path=path_out_epistatic_results, basename="unassigned", ext=extension_epistatic_results)
+### Filehandles
+fh_multiple_assignments = open(file_multiple_assignments, 'w')
+fh_unassigned = open(file_unassigned, 'w')
+
+###################################### Main Loop ######################################
+
+### READ and WRITE line-by-line
+count_unassigned = 0
+count_assigned = 0
+epistatic_counts_dict = collections.defaultdict(int)
+epistatic_counts_significant_dict = collections.defaultdict(int)
+
+with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
+	next(fh_compiled) # SKIPPING THE FIRST LINE!
+	for line in fh_compiled:
+		#chr1, snp_A, chr2, snp_B, beta, chisq, pvalue, phenotype
+		# CHR	SNP_A	CHR	SNP_B	BETA	CHISQ	PVALUE	PHENOTYPE
+		# 11	rs1508531	11	rs4939298	-0.13990	33.32995	7.77755E-09	ILMN_1716816
+		line = line.strip() # strip() without argument will remove BOTH leading and trailing whitespace.
+		fields = line.split() 
+		snp_A, snp_B, pvalue = fields[1], fields[3], float(fields[6])
+
+		set_A = SNP2interaction_dict[snp_A] # TODO: put this into a try/except or use dict.get() for a default value
+		set_B = SNP2interaction_dict[snp_B]
+
+		set_AB = set_A & set_B # intersection
+
+		### REMEMBER: the set_AB contains strings of the following format:
+			# experiment_interaction_identifier = {experiment_type}_{experiment_no}_{interaction_no}
+		# e.g. 			
+			# null_256_22233
+			# null_1000_26312
+			# ....
+
+		if len(set_AB)==0:
+			# assign to unassigned group
+			count_unassigned += 1
+			fh_unassigned.write(line + "\n")
+		elif len(set_AB)==1:
+			# assign to one group
+			count_assigned += 1
+			experiment_interaction_identifier = iter(set_AB).next() # e.g. null_256_22233
+			tmp_parts_list = experiment_interaction_identifier.split('_')
+			experiment_identifier = tmp_parts_list[0] + "_" + tmp_parts_list[1] # e.g. null_256
+
+			if pvalue <= bonferroni_correction_dict[experiment_identifier]:
+				flag_significant = True
+				epistatic_counts_significant_dict[experiment_identifier] += 1
+			else:
+				flag_significant = False
+
+			epistatic_counts_dict[experiment_identifier] += 1
+
+			#experiment_interaction_identifier = list(set_AB)[0]
+			experiment_identifier_fh_dict[experiment_identifier].write( "{}\t{}\t{}\n".format(line, experiment_interaction_identifier, flag_significant) )
 			
+
+
+		elif len(set_AB)>1:
+			# warn
+			# assigned to multiple groups
+			
+			count_assigned += 1 # OBS: SNP pairs with multiple assignments will only be counted once!
+			print "Found SNP pair with multiple assignments (#{})".format(len(set_AB))
+			for experiment_interaction_identifier in set_AB:
+				tmp_parts_list = experiment_interaction_identifier.split('_')
+				experiment_identifier = tmp_parts_list[0] + "_" + tmp_parts_list[1] # e.g. null_256
+
+				if pvalue <= bonferroni_correction_dict[experiment_identifier]:
+					flag_significant = True
+					epistatic_counts_significant_dict[experiment_identifier] += 1
+				else:
+					flag_significant = False
+
+				epistatic_counts_dict[experiment_identifier] += 1
+
+				experiment_identifier_fh_dict[experiment_identifier].write( "{}\t{}\t{}\n".format(line, experiment_interaction_identifier, flag_significant) )
+				
+					
+			### multiple assignment file
+			fh_multiple_assignments.write(line + "\t" + ";".join(set_AB) + "\n")
+
+
+
+print "count_unassigned: {}".format(count_unassigned)
+print "count_assigned: {}".format(count_assigned)
+
 ###################################### Writing files ######################################
 
-# print "Writing interactions_per_snp"
-# ################## file_interactions_per_snp ##################
-# with open(file_interactions_per_snp, 'w') as fh:
-# 	for key in sorted(SNP2interaction_dict, key=lambda x: x.split("_")[-1]):
-# 		fh.write( "{}\t{}\n".format(key, len(SNP2interaction_dict[key])) )
+with open(file_epistatic_counts, 'w') as fh:
+	for experiment_identifier in sorted(epistatic_counts_dict, key=epistatic_counts_dict.get, reverse=True):
+		fh.write( "{}\t{}\t{}\t{}\n".format(experiment_identifier, epistatic_counts_dict[experiment_identifier], epistatic_counts_significant_dict[experiment_identifier], bonferroni_correction_dict[experiment_identifier]) ) # epistatic_counts_dict + epistatic_counts_significant_dict
+		#fh.write( "{}\t{}\n".format(experiment_identifier, epistatic_counts_dict[experiment_identifier]) ) # 
 
+###################################### Closing file handle ######################################
 
-print "Writing bonferroni_correction"
-################## file_bonferroni_correction ##################
-with open(file_bonferroni_correction, 'w') as fh_bon:
-	for key in sorted(bonferroni_correction_dict, key=lambda x: x.split("_")[-1]):
-		fh_bon.write( "{}\t{}\n".format(key, bonferroni_correction_dict[key]) )
-		#print key, bonferroni_correction_dict[key]
+print "Closing filehandles..."
+fh_multiple_assignments.close()
+fh_unassigned.close()
 
-
-print "Writing file_SNP2interaction_map"
-################## file_SNP2interaction_map ##################
-with open(file_SNP2interaction_map, 'w') as fh_map:
-	for snp in sorted(SNP2interaction_dict): # .items() does not work because we are using sorted() 
-		set_string = ";".join(sorted(SNP2interaction_dict[snp])) # USING set() sorted set
-		#set_string = ";".join(SNP2interaction_dict[snp]) # # USING OrderedDict()
-		fh_map.write( "{}\t{}\t{}\n".format(snp, len(SNP2interaction_dict[snp]), set_string) )
-
-
-###################################### Plotting ######################################
-
-################## Histogram ##################
-print "will plot histogram now..."
-
-x = np.array( [len(value) for value in SNP2interaction_dict.itervalues()] ) # note the use of .itervalues()
-plt.figure()
-_ = plt.hist(x, bins=500) # 100 looks ok
-plt.title('interactions_per_snp', fontsize=18)
-plt.xlabel('interactions_per_snp')
-plt.ylabel('Counts')
-plt.savefig(file_fig_interactions_per_snp_histogram)
-plt.close() # or plt.close(fig)
-
-
-################## Barplot ##################
-### Simple bar-chart
-# http://cs.smith.edu/dftwiki/index.php/MatPlotLib_Tutorial_1
-
-print "will plot barplot now..."
-
-width = 1
-N = len( bonferroni_correction_dict )
-x = np.arange(1, N+1)
-y = np.array(bonferroni_correction_dict.values()) # can also be list?
-labels = bonferroni_correction_dict.keys()
-
-print "number of observations for plotting: %s" % N
-
-try:
-	plt.figure()
-	_ = plt.bar( x, y, width, color="y" )
-	plt.title('bonferroni_correction_dict', fontsize=18)
-	plt.xlabel('Experiment type/no')
-	plt.ylabel('Counts')
-
-	plt.xticks(x + width/2.0, labels )
-	
-	plt.savefig(file_fig_n_tests_barplot)
-	plt.close() # or plt.close(fig)
-except Exception, e:
-	print "Exception occurred during plotting: %s" % e # 
-
-
-
+#for experiment_interaction_identifier in experiment_identifier_fh_dict:
+for fh in experiment_identifier_fh_dict.values():
+	fh.close()
 
 
 
 print "The script is complete!"
+
+###################################### GARBAGE ######################################
+
+	# *Main* path where the FastEpistasis results lives.
+	# Expected folder organization in path_main_input:
+	# <path_main_input>/
+	# 	errors/ 
+	# 	LSF_jobs_ids/								[optional]
+	# 	cat_epistasis_YYMMDD_HHMMSS/				[optional]
+	# 	config.json									[optional]
+	# 	epi/										[optional]
+	# 	fastEpi_compiled/							[*required*]
+	# 		XXX___probe_epistatic_count.txt
+	# 		XXX___results.epi.qt.lm.combined.txt	[*required*]
+	# 		XXX___stat_file.txt
+	# 		SNP2interaction_map/
+	# 			SNP2interaction_map.pickle 			[*required*]
+	# 			MORE_FILES...
+	# 	jobs/										[optional]
+	# 	link_bim									[optional]
+	# 	link_probes									[optional]
+	# 	link_set									[optional]
+	# 	logs/										[optional]
+	# 	logs_worker/								[optional]
+
+	# The program relies on the *specific names* in fastEpi_compiled to match the specified pattern.
 
