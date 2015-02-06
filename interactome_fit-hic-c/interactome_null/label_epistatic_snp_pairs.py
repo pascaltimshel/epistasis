@@ -2,6 +2,7 @@
 
 import os
 import sys
+import time
 
 import matplotlib
 matplotlib.use('Agg') #Agg backend and not an X-using backend that required an X11 connection. Call use BEFORE importing pyplot!
@@ -25,6 +26,8 @@ import glob
 
 import resource # to allow enough filehandles to be opened
 
+import pdb
+
 ###################################### CONSTANTS ######################################
 
 N_PHENOTYPES_TESTED = 9269
@@ -34,8 +37,12 @@ ALPHA = 0.05
 
 #python label_epistatic_snp_pairs.py --path_main_input XXX
 
-### Example
+################## OSX ##################
+### hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
 #python label_epistatic_snp_pairs.py --path_main_input /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
+
+### hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8
+#python label_epistatic_snp_pairs.py --path_main_input /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8
 
 
 ###################################### SYNOPSIS ######################################
@@ -112,7 +119,14 @@ path_main_input = os.path.abspath(args.path_main_input)
 path_main_out = path_main_input + "/assigned" # dir # hic_hypothesis_testing
 path_out_epistatic_results = path_main_out + "/epistatic_results" # dir
 extension_epistatic_results = "lm.combined.txt" # file extension name
+
 file_epistatic_counts = path_main_out + "/epistatic_counts.txt"
+file_epistatic_counts_csv = path_main_out + "/epistatic_counts.csv"
+file_epistatic_stats = path_main_out + "/epistatic_stats.txt"
+
+file_null_false_negatives = path_main_out + "/null_false_negatives.txt" # 
+file_epistatic_intrachromosomal = path_main_out + "/epistatic_intrachromosomal.txt" # 
+
 #file_epistatic_counts_significant = path_main_out + "/epistatic_counts_significant.txt"
 
 ################## Get input files ##################
@@ -144,10 +158,19 @@ for path in [path_main_out, path_out_epistatic_results]:
 	if not os.path.exists(path):
 		os.makedirs(path)
 
-###################################### Read/Load input filesfile_SNP2interaction_map ######################################
+################## Clearing any existing files that will be *APPENDED* to ##################
 
+for filename in [file_epistatic_intrachromosomal, file_null_false_negatives]:
+	if os.path.exists(filename):
+		print "Removing existing file: {}".format(filename)
+		os.remove(filename)
+
+###################################### Read/Load input filesfile_SNP2interaction_map ######################################
+filesize_SNP2interaction_map = os.path.getsize(file_SNP2interaction_map) >> 20 # BitWise Operations: shift-right | x >> y :Returns x with the bits shifted to the right by y places.
+print "Loading SNP2interaction_dict via pickled file (size={} MB) ...".format(filesize_SNP2interaction_map)
 with open(file_SNP2interaction_map, 'r') as fh: # perhaps read the pickle file in binary mode.
 	SNP2interaction_dict = pickle.load(fh)
+print "Done loading pickled file"
 
 ###################################### Open files ######################################
 
@@ -195,26 +218,51 @@ fh_unassigned = open(file_unassigned, 'w')
 ###################################### Main Loop ######################################
 
 ### READ and WRITE line-by-line
+count_total = 0
 count_unassigned = 0
 count_assigned = 0
-epistatic_counts_dict = collections.defaultdict(int)
-epistatic_counts_significant_dict = collections.defaultdict(int)
+count_null_false_positives = 0
+count_intrachromosomal_interactions = 0
+#epistatic_counts_dict = collections.defaultdict(lambda: collections.defaultdict(int)) # e.g. epistatic_counts_dict['MASTER_KEY']['EXPERIMENT_IDENTIFIER'] = INTEGER
+	# the expression inside the parenthesis must be a 'callable'. That is why I use a 'lambda function'
+epistatic_counts_dict = dict() #collections.defaultdict(dict)
+epistatic_counts_dict['count_significant_pruned'] = collections.defaultdict(set)
+epistatic_counts_dict['count_significant'] = collections.defaultdict(int)
+epistatic_counts_dict['count_all'] = collections.defaultdict(int)
+	### MASTER KEYS IN DICT:
+	# count_significant_pruned
+	# count_significant
+	# count_all
+
+#epistatic_counts_dict['count_significant'] = collections.defaultdict(int)
+
+### Count the number of lines in the file
+n_lines_fastepistasis_lm_combined = sum(1 for line in open(file_fastepistasis_lm_combined)) # this is pretty fast (only a bit slower than "wc -l"). 3.5 sec for a 1 GB file
+
+time_start_loop = time.time()
 
 with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 	next(fh_compiled) # SKIPPING THE FIRST LINE!
-	for line in fh_compiled:
+	for line_no, line in enumerate(fh_compiled, start=1):
+		count_total += 1
+
+		time_elapsed_loop = time.time() - time_start_loop # <type 'float'>
+		if line_no % 1000 == 0: 
+			print "Main loop | #{line_no}/#{n_lines} | {pct_complete:.2f} % done | {sec:.2f} sec [{min:.2f} min]".format(line_no=line_no, n_lines=n_lines_fastepistasis_lm_combined, pct_complete=(line_no/float(n_lines_fastepistasis_lm_combined))*100, sec=time_elapsed_loop, min=time_elapsed_loop/60)
+		
+
+
 		#chr1, snp_A, chr2, snp_B, beta, chisq, pvalue, phenotype
 		# CHR	SNP_A	CHR	SNP_B	BETA	CHISQ	PVALUE	PHENOTYPE
 		# 11	rs1508531	11	rs4939298	-0.13990	33.32995	7.77755E-09	ILMN_1716816
 		line = line.strip() # strip() without argument will remove BOTH leading and trailing whitespace.
 		fields = line.split() 
-		snp_A, snp_B, pvalue = fields[1], fields[3], float(fields[6])
+		chr_A, snp_A, chr_B, snp_B, pvalue = fields[0], fields[1], fields[2], fields[3], float(fields[6])
 
 		set_A = SNP2interaction_dict[snp_A] # TODO: put this into a try/except or use dict.get() for a default value
 		set_B = SNP2interaction_dict[snp_B]
 
 		set_AB = set_A & set_B # intersection
-
 		### REMEMBER: the set_AB contains strings of the following format:
 			# experiment_interaction_identifier = {experiment_type}_{experiment_no}_{interaction_no}
 		# e.g. 			
@@ -222,6 +270,13 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 			# null_1000_26312
 			# ....
 
+		### Checking for *ASSINGED* INTRA chromosomal interactions
+		if (chr_A == chr_B) and (len(set_AB) > 0):
+			count_intrachromosomal_interactions += 1
+			with open(file_epistatic_intrachromosomal, 'a') as fh: # OBS: append mode!
+				fh.write( "{}\t{}\t{}\n".format(line, len(set_AB), ";".join(set_AB)) )
+
+		### Mapping SNP-pairs to their experiments
 		if len(set_AB)==0:
 			# assign to unassigned group
 			count_unassigned += 1
@@ -235,11 +290,12 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 
 			if pvalue <= bonferroni_correction_dict[experiment_identifier]:
 				flag_significant = True
-				epistatic_counts_significant_dict[experiment_identifier] += 1
+				epistatic_counts_dict['count_significant'][experiment_identifier] += 1
+				epistatic_counts_dict['count_significant_pruned'][experiment_identifier].add(experiment_interaction_identifier)
 			else:
 				flag_significant = False
 
-			epistatic_counts_dict[experiment_identifier] += 1
+			epistatic_counts_dict['count_all'][experiment_identifier] += 1
 
 			#experiment_interaction_identifier = list(set_AB)[0]
 			experiment_identifier_fh_dict[experiment_identifier].write( "{}\t{}\t{}\n".format(line, experiment_interaction_identifier, flag_significant) )
@@ -247,22 +303,48 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 
 
 		elif len(set_AB)>1:
-			# warn
+			# "warn"
 			# assigned to multiple groups
-			
+			# VALIDATION: check that hic_1 is *NOT* co-occurring with ANY null experiments
 			count_assigned += 1 # OBS: SNP pairs with multiple assignments will only be counted once!
-			print "Found SNP pair with multiple assignments (#{})".format(len(set_AB))
+			#print "Found SNP pair with multiple assignments (#{})".format(len(set_AB))
+			flag_null_seen = False
 			for experiment_interaction_identifier in set_AB:
 				tmp_parts_list = experiment_interaction_identifier.split('_')
 				experiment_identifier = tmp_parts_list[0] + "_" + tmp_parts_list[1] # e.g. null_256
 
+				if experiment_identifier.startswith("null"): # hmmm, there is a slight performance loss when doing this testing this 'if statement' many time. However, this will not affect the speed of the code seriously.
+					flag_null_seen = True
+
+				if (experiment_identifier == "hic_1") and (flag_null_seen): # checking for co-occurring of hic with ANY null experiments
+					print "List of experiment_interaction_identifiers in set_AB:\n{}".format( "\n".join(set_AB) )
+					print "DAMN, got hic_1 for a SNP-pair with 'multiple_assigments' that co-occurs with a null experiment. This means that the *NULL CONTAINS AT TRUE POSITIVE*."
+					count_null_false_positives += 1
+					with open(file_null_false_negatives, 'a') as fh: # OBS: append mode!
+						fh.write( "{}\t{}\t{}\n".format(line, len(set_AB), ";".join(set_AB)) )
+
+					# The reason for this 'false negatives' in the null, is that some interactions may be overlaping because of the 'width' of the regions.
+					# Remember we use the same 'interationA' for the HiC and Null. Thus if a Null interaction for 'interactionB' falls suficiently close to the 'interactionB' from the HiC, they will have an overlap and the SNPs in this overlap will be in both a Null and HiC experiment.
+					# Using a large width or many interaction will cause this 'false negative' problem to be bigger.
+					# Remember that the R-script that contructs the null tables *ADVANCED* in the sense that it uses *chr:pos information* to ensure that *NO NULL [in interactionB] OVERLAP WITH THE HIC*.
+					# *CONCLUSION*: this is not really a big problem if it happens rarely. We just need to know how often this occur to monitor the 'false negative' rate in the Null
+
+					### IMPORTANT - recent Questions:
+					# How is it possible to have two HiC experiments listed in the set_AB for two SNPs? (Should the code check be changed?)
+					# How come two SNPs are listed as interchromosomal interactions?
+						# --> the null must *NOT HAVE ANY INTRA-CHROMOSOMAL INTERACTIONS*.
+
+
+					#raise Exception("See above print messages...")
+
 				if pvalue <= bonferroni_correction_dict[experiment_identifier]:
 					flag_significant = True
-					epistatic_counts_significant_dict[experiment_identifier] += 1
+					epistatic_counts_dict['count_significant'][experiment_identifier] += 1
+					epistatic_counts_dict['count_significant_pruned'][experiment_identifier].add(experiment_interaction_identifier)
 				else:
 					flag_significant = False
 
-				epistatic_counts_dict[experiment_identifier] += 1
+				epistatic_counts_dict['count_all'][experiment_identifier] += 1
 
 				experiment_identifier_fh_dict[experiment_identifier].write( "{}\t{}\t{}\n".format(line, experiment_interaction_identifier, flag_significant) )
 				
@@ -270,17 +352,62 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 			### multiple assignment file
 			fh_multiple_assignments.write(line + "\t" + ";".join(set_AB) + "\n")
 
+print "Done with main loop!"
 
-
-print "count_unassigned: {}".format(count_unassigned)
-print "count_assigned: {}".format(count_assigned)
 
 ###################################### Writing files ######################################
 
 with open(file_epistatic_counts, 'w') as fh:
-	for experiment_identifier in sorted(epistatic_counts_dict, key=epistatic_counts_dict.get, reverse=True):
-		fh.write( "{}\t{}\t{}\t{}\n".format(experiment_identifier, epistatic_counts_dict[experiment_identifier], epistatic_counts_significant_dict[experiment_identifier], bonferroni_correction_dict[experiment_identifier]) ) # epistatic_counts_dict + epistatic_counts_significant_dict
-		#fh.write( "{}\t{}\n".format(experiment_identifier, epistatic_counts_dict[experiment_identifier]) ) # 
+	#for experiment_identifier in sorted(epistatic_counts_dict, key=epistatic_counts_dict.get, reverse=True):
+	for experiment_identifier in bonferroni_correction_dict:
+		fh.write( "{}\t{}\t{}\t{}\t{}\n".format(experiment_identifier, 
+												epistatic_counts_dict['count_all'][experiment_identifier], 
+												epistatic_counts_dict['count_significant'][experiment_identifier], 
+												len(epistatic_counts_dict['count_significant_pruned'][experiment_identifier]), 
+												bonferroni_correction_dict[experiment_identifier]),
+												) # epistatic_counts_dict + epistatic_counts_dict['count_significant']
+		#fh.write( "{}\t{}\n".format(experiment_identifier, epistatic_counts_dict['count_all'][experiment_identifier]) ) # 
+
+
+###################################### Calculating Empirical P-value ######################################
+
+#df = pd.DataFrame()
+df = pd.DataFrame(columns=epistatic_counts_dict.keys(), index=bonferroni_correction_dict.keys()) # initialize data frame with zeroes.
+df = df.fillna(0) # fill the data with 0s rather than NaNs
+for key_master in epistatic_counts_dict:
+	for experiment_identifier in epistatic_counts_dict[key_master]:
+	#for experiment_identifier in bonferroni_correction_dict:
+		#df[key_master][]
+		if key_master == 'count_significant_pruned':
+			df.ix[experiment_identifier, key_master] = len(epistatic_counts_dict[key_master][experiment_identifier])
+		else:
+			df.ix[experiment_identifier, key_master] = epistatic_counts_dict[key_master][experiment_identifier]
+		#print key_master, experiment_identifier
+		#if 'c' in df.index: pdb.set_trace()
+
+### About p-values: "obtaining a result EQUAL TO or MORE EXTREME than what was actually observed" --> p_val = sum(X >= X_OBS)
+p_value_count_significant_pruned = sum(df.ix[:, 'count_significant_pruned'] >= df.ix['hic_1', 'count_significant_pruned'])/float(len(df))
+p_value_count_significant = sum(df.ix[:, 'count_significant'] >= df.ix['hic_1', 'count_significant'])/float(len(df))
+
+################## Write csv to file ##################
+### Sorting, inplace
+df.sort(['count_significant_pruned', 'count_significant'], ascending=False, inplace=True)
+### Writing file
+df.to_csv(file_epistatic_counts_csv) # sep='\t', index=True, header=True
+
+################## Write stats file ##################
+
+with open(file_epistatic_stats, 'w') as fh:
+	fh.write( "count_unassigned: {}\n".format(count_unassigned) )
+	fh.write( "count_assigned: {}\n".format(count_assigned) )
+	fh.write( "count_null_false_positives: {}\n".format(count_null_false_positives) )
+	fh.write( "count_intrachromosomal_interactions: {} ({:.2f} %)\n".format(count_intrachromosomal_interactions, count_intrachromosomal_interactions/float(count_total)) )
+
+	fh.write( "HIC count_significant_pruned: {}\n".format(df.ix['hic_1', 'count_significant_pruned']) )
+	fh.write( "HIC count_significant: {}\n".format(df.ix['hic_1', 'count_significant']) )
+
+	fh.write( "p_value_count_significant_pruned: {}\n".format(p_value_count_significant_pruned) )
+	fh.write( "p_value_count_significant: {}\n".format(p_value_count_significant) )
 
 ###################################### Closing file handle ######################################
 
