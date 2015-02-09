@@ -206,7 +206,7 @@ queue_name = "week" # --> REL max_jobs_per_user=200 | CentOS max_jobs_per_user=3
 #queue_name = "MEDPOP" # --> max_jobs_per_user=NA
 # priority: This queue has a per-user limit of 10 running jobs, and a run time limit of three days.
 mem="5" # gb      
-proc=12 # number of CPUs
+proc=20 # number of CPUs
 shared_mem=True # if True: sets -R 'span[hosts=1]' | use this for multithreaded SMP jobs
 #shared_mem=False
 
@@ -221,7 +221,7 @@ args = ParseArguments()
 
 ###################################### Paramters ######################################
 # ***OBS: this is the NUMBER of interactions to run per job.
-n_jobs_per_bsub = 100 #500 # 60 # --> RHEL WEEK
+n_jobs_per_bsub = 125 #500 # 60 # --> RHEL WEEK
 #n_jobs_per_bsub = 4 #25 # 100 # --> RHEL HOUR
 #n_jobs_per_bsub = 100 # --> RHEL HOUR v. 2
 #n_jobs_per_bsub = 2000 # --> MEDPOP
@@ -233,17 +233,24 @@ script2call = "/cvar/jhlab/timshel/git/epistasis/interactome_fit-hic-c/run_fast_
 ######################################  ######################################
 ### Overall parameters
 maf = "5"
-interaction_width = "50000" # --> RHEL hour
+#interaction_width = "50000" # --> RHEL hour
 #interaction_width = "500" # --> RHEL MEDPOP
 #interaction_width = "500" # --> RHEL hour v. 2
 #interaction_width = "10000" # --> CentOS hour
 #interaction_width = "10000"
-hic_dataset = "hIMR90"
-q_threshold = "1e-09" # --> REL hour
+#interaction_width = "2500" # --> RHEL week - LASTEST hIMR90
+interaction_width = "1000" # --> RHEL week - LASTEST hESC
+
+#hic_dataset = "hIMR90"
+hic_dataset = "hESC"
+
+#q_threshold = "1e-09" # --> RHEL hour
 #q_threshold = "1e-08" # --> CentOS hour
 #q_threshold = "1e-08" # --> RHEL hour v. 2
-#q_threshold = "1e-06" # --> REL MEDPOP
+#q_threshold = "1e-06" # --> RHEL MEDPOP
 #q_threshold = "1e-10"
+#q_threshold = "1e-07" # --> RHEL week - LASTEST hIMR90
+q_threshold = "1e-12" # --> RHEL week - LASTEST hESC
 
 ### Input BIM file: *UPS: keep this in sync!* ###
 #bfile = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean" # DO NOT ADD EXTENSION to file
@@ -255,7 +262,7 @@ path_files = "/cvar/jhlab/timshel/egcut/ETypes_probes_norm_peer/phenofile_log2_k
 ### Formatting file_set
 file_set = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_{maf}_sets/{interaction_width}_snppool_{hic_dataset}_q_{q_threshold}/snp_sets/set_AB.txt".format(maf=maf, interaction_width=interaction_width, hic_dataset=hic_dataset, q_threshold=q_threshold)
 if not os.path.exists(file_set): # checks for a valid symbolic link. That is, it cannot be broken
-	raise Exception("The file_set symlink is broken - path does not exists")
+	raise Exception( "The file_set symlink is broken - path does not exists: {}".format(file_set) )
 else:
 	print "OK - found the file_set file. Will create symlink soon..."
 

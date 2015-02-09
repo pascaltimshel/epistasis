@@ -37,12 +37,19 @@ ALPHA = 0.05
 
 #python label_epistatic_snp_pairs.py --path_main_input XXX
 
+
+################## Broad ##################
+### hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10
+#python label_epistatic_snp_pairs.py --path_main_input /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10/fastEpi_compiled
+	# ---> runtime: XXX
+
 ################## OSX ##################
 ### hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
 #python label_epistatic_snp_pairs.py --path_main_input /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
 
 ### hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8
 #python label_epistatic_snp_pairs.py --path_main_input /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8
+
 
 
 ###################################### SYNOPSIS ######################################
@@ -168,9 +175,10 @@ for filename in [file_epistatic_intrachromosomal, file_null_false_negatives]:
 ###################################### Read/Load input filesfile_SNP2interaction_map ######################################
 filesize_SNP2interaction_map = os.path.getsize(file_SNP2interaction_map) >> 20 # BitWise Operations: shift-right | x >> y :Returns x with the bits shifted to the right by y places.
 print "Loading SNP2interaction_dict via pickled file (size={} MB) ...".format(filesize_SNP2interaction_map)
+time_start_tmp = time.time()
 with open(file_SNP2interaction_map, 'r') as fh: # perhaps read the pickle file in binary mode.
 	SNP2interaction_dict = pickle.load(fh)
-print "Done loading pickled file"
+print "Done loading pickled file in {:.2f} min".format( (time.time()-time_start_tmp)/60 )
 
 ###################################### Open files ######################################
 
@@ -179,7 +187,8 @@ print "Done loading pickled file"
 
 soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
 print "SYSTEM INFO: number of files this process can open: (resource.RLIMIT_NOFILE, soft limit): {}".format(soft)
-resource.setrlimit(resource.RLIMIT_NOFILE, (9999, hard)) # *CHANGING SOFT LIMIT* to 9999 (abitrary high number)
+print "SYSTEM INFO: number of files this process can open: (resource.RLIMIT_NOFILE, hard limit): {}".format(hard)
+resource.setrlimit(resource.RLIMIT_NOFILE, (4000, hard)) # *CHANGING SOFT LIMIT* to 9999 (abitrary high number) # Broad RHEL ISH has a hardlimit of 4096
 soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
 print "SYSTEM INFO - UPDATED: number of files this process can open: (resource.RLIMIT_NOFILE, soft limit): {}".format(soft)
 
