@@ -28,6 +28,7 @@ import memory_profiler; import psutil # OBS: the program RUN EXTREMELY SLOW when
 	#/home/unix/ptimshel/.local/lib/python2.7/site-packages/memory_profiler.py:62: UserWarning: psutil module not found. memory_profiler will be slow
 	#  warnings.warn("psutil module not found. memory_profiler will be slow")
 
+import pdb
 
 ###################################### USAGE ######################################
 
@@ -42,9 +43,10 @@ import memory_profiler; import psutil # OBS: the program RUN EXTREMELY SLOW when
 #python gen_SNP2interaction_map.py --path_interaction_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_snpsets/maf_5_sets/500_snppool_hIMR90_q_1e-06 --file_null_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-06.nperm_1000.txt --q_threshold 1e-06 --path_main_out /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8
 
 
-### hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10 (not complete yet)
+### hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10 (could not complete - TOO MUCH MEMORY?)
 #python gen_SNP2interaction_map.py --path_interaction_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_snpsets/maf_5_sets/50000_snppool_hIMR90_q_1e-09 --file_null_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-09.nperm_1000.txt --q_threshold 1e-09 --path_main_out /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10
 	# at null_192_1017 --> Segmentation fault: 11 (likely because it was using 6 GB memory)
+
 
 ################## Broad ##################
 ### hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10
@@ -221,14 +223,30 @@ def populate_snp2interaction_dict():
 			
 			#if interaction_no==100: break
 
+			### KEEP THIS - THERE ARE SOME USEFUL INFORMATION IN THE CODE ### 
+			### OLD METHOD WHICH RESULTED IN UNEQUAL REPRESENTATION OF EXPERIMENTS_IDENTIFERS ACROSS SNPS
+			### That is, some EXPERIMENTS_IDENTIFERS (e.g. null_617) would not be represented 3 times in a SNP (rs1322573) like the majority of EXPERIMENTS_IDENTIFERS 
+			# try:
+			# 	snps_A = df_interaction_table_snps["snps_A"][interaction_idx].split(";")
+			# 	snps_B = df_interaction_table_snps["snps_B"][elem].split(";")
+			# 	snps = snps_A + snps_B # similar to .extend(). OBS: this list could potentially contain DUPLICATES. However, that should not be a problem
+			# 	#snps = snps_B
+			# except AttributeError: # E.g. "AttributeError 'float' object has no attribute 'split'" when splitting "nan" ("nan" is type "float")")
+			# 	pass
+			# 	# --> Got AttributeError. Value is likely 'nan'. Will do NOTHING because this is ok! 
+
+
 			try:
 				snps_A = df_interaction_table_snps["snps_A"][interaction_idx].split(";")
-				snps_B = df_interaction_table_snps["snps_B"][elem].split(";")
-				snps = snps_A + snps_B # similar to .extend(). OBS: this list could potentially contain DUPLICATES. However, that should not be a problem
-				#snps = snps_B
 			except AttributeError: # E.g. "AttributeError 'float' object has no attribute 'split'" when splitting "nan" ("nan" is type "float")")
-				pass
-				# --> Got AttributeError. Value is likely 'nan'. Will do NOTHING because this is ok! 
+				snps_A = []
+
+			try:
+				snps_B = df_interaction_table_snps["snps_B"][elem].split(";")
+			except AttributeError: # E.g. "AttributeError 'float' object has no attribute 'split'" when splitting "nan" ("nan" is type "float")")
+				snps_B = []
+
+			snps = snps_A + snps_B # similar to .extend(). OBS: this list could potentially contain DUPLICATES. However, that should not be a problem
 
 			#print "Got {} SNPs in 'snps'".format(len(snps))
 			
@@ -238,13 +256,20 @@ def populate_snp2interaction_dict():
 			experiment_no = column_name.split("_")[1] # {1, 2, .., N_perm}
 			interaction_identifier = "{experiment_type}_{experiment_no}_{interaction_no}".format(experiment_type=experiment_type, experiment_no=experiment_no, interaction_no=interaction_no)
 			print interaction_identifier
-			
+
+			### DEBUG			
+			# if interaction_identifier.endswith("_394"):
+			# 	print interaction_identifier
+			# 	pdb.set_trace()
+
+
 			for snp in snps: 
 				### Remarks:
 				# "snps" may contain duplicates if snps_A and snps_B overlap because we are USING LIST PLUS (+) OPERATOR: snps_A + snps_B
 				# duplicates is not a problem for this code. Just think about it.
 				# duplicates should not exists when using INTER-CHROMOSOMAL interactions
 
+				#if snp == 'rs1322573': pdb.set_trace() # ***DEBUGGING
 				SNP2interaction_dict[snp].add(interaction_identifier) # using set()
 				#SNP2interaction_dict[snp][interaction_identifier] = 1 # using OrderedDict
 				#SNP2interaction_dict[snp] = 1

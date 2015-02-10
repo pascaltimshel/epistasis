@@ -256,7 +256,7 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 		count_total += 1
 
 		time_elapsed_loop = time.time() - time_start_loop # <type 'float'>
-		if line_no % 1000 == 0: 
+		if line_no % 5000 == 0: 
 			print "Main loop | #{line_no}/#{n_lines} | {pct_complete:.2f} % done | {sec:.2f} sec [{min:.2f} min]".format(line_no=line_no, n_lines=n_lines_fastepistasis_lm_combined, pct_complete=(line_no/float(n_lines_fastepistasis_lm_combined))*100, sec=time_elapsed_loop, min=time_elapsed_loop/60)
 		
 
@@ -279,18 +279,23 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 			# null_1000_26312
 			# ....
 
+		### Mapping SNP-pairs to *UNASSIGNED* group
+		if len(set_AB)==0:
+			# assign to unassigned group
+			count_unassigned += 1
+			fh_unassigned.write(line + "\n")
+
+		##############################################################################
 		### Checking for *ASSINGED* INTRA chromosomal interactions
 		if (chr_A == chr_B) and (len(set_AB) > 0):
 			count_intrachromosomal_interactions += 1
 			with open(file_epistatic_intrachromosomal, 'a') as fh: # OBS: append mode!
 				fh.write( "{}\t{}\t{}\n".format(line, len(set_AB), ";".join(set_AB)) )
+			continue # *IMPORTANT*: we skip *ASSINGED* *INTRACHROMOSOMAL* interactions
+		##############################################################################
 
 		### Mapping SNP-pairs to their experiments
-		if len(set_AB)==0:
-			# assign to unassigned group
-			count_unassigned += 1
-			fh_unassigned.write(line + "\n")
-		elif len(set_AB)==1:
+		if len(set_AB)==1:
 			# assign to one group
 			count_assigned += 1
 			experiment_interaction_identifier = iter(set_AB).next() # e.g. null_256_22233
@@ -309,8 +314,6 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 			#experiment_interaction_identifier = list(set_AB)[0]
 			experiment_identifier_fh_dict[experiment_identifier].write( "{}\t{}\t{}\n".format(line, experiment_interaction_identifier, flag_significant) )
 			
-
-
 		elif len(set_AB)>1:
 			# "warn"
 			# assigned to multiple groups
@@ -378,45 +381,64 @@ with open(file_epistatic_counts, 'w') as fh:
 		#fh.write( "{}\t{}\n".format(experiment_identifier, epistatic_counts_dict['count_all'][experiment_identifier]) ) # 
 
 
-###################################### Calculating Empirical P-value ######################################
+###################################### CREATING DataFrame: Calculating Empirical P-value ######################################
 
-#df = pd.DataFrame()
-df = pd.DataFrame(columns=epistatic_counts_dict.keys(), index=bonferroni_correction_dict.keys()) # initialize data frame with zeroes.
-df = df.fillna(0) # fill the data with 0s rather than NaNs
+#df_experiment_identifier_counts = pd.DataFrame()
+df_experiment_identifier_counts = pd.DataFrame(columns=epistatic_counts_dict.keys(), index=bonferroni_correction_dict.keys()) # initialize data frame with zeroes.
+df_experiment_identifier_counts = df_experiment_identifier_counts.fillna(0) # fill the data with 0s rather than NaNs
+### COLUMNS IN DATAFRAME: "keys of epistatic_counts_dict"
+	# count_all
+	# count_significant
+	# count_significant_pruned
+
+
 for key_master in epistatic_counts_dict:
 	for experiment_identifier in epistatic_counts_dict[key_master]:
 	#for experiment_identifier in bonferroni_correction_dict:
-		#df[key_master][]
+		#df_experiment_identifier_counts[key_master][]
 		if key_master == 'count_significant_pruned':
-			df.ix[experiment_identifier, key_master] = len(epistatic_counts_dict[key_master][experiment_identifier])
+			df_experiment_identifier_counts.ix[experiment_identifier, key_master] = len(epistatic_counts_dict[key_master][experiment_identifier])
 		else:
-			df.ix[experiment_identifier, key_master] = epistatic_counts_dict[key_master][experiment_identifier]
+			df_experiment_identifier_counts.ix[experiment_identifier, key_master] = epistatic_counts_dict[key_master][experiment_identifier]
 		#print key_master, experiment_identifier
-		#if 'c' in df.index: pdb.set_trace()
+		#if 'c' in df_experiment_identifier_counts.index: pdb.set_trace()
 
+################## Creating P-value dict ##################
 ### About p-values: "obtaining a result EQUAL TO or MORE EXTREME than what was actually observed" --> p_val = sum(X >= X_OBS)
-p_value_count_significant_pruned = sum(df.ix[:, 'count_significant_pruned'] >= df.ix['hic_1', 'count_significant_pruned'])/float(len(df))
-p_value_count_significant = sum(df.ix[:, 'count_significant'] >= df.ix['hic_1', 'count_significant'])/float(len(df))
+p_value_dict = {} # KEYS will be: count_significant_pruned, count_significant, count_all
+for key_master in epistatic_counts_dict:
+	p_value_dict[key_master] = sum(df_experiment_identifier_counts.ix[:, key_master] >= df_experiment_identifier_counts.ix['hic_1', key_master])/float(len(df_experiment_identifier_counts))
+### OLD:
+# p_value_count_significant_pruned = sum(df_experiment_identifier_counts.ix[:, 'count_significant_pruned'] >= df_experiment_identifier_counts.ix['hic_1', 'count_significant_pruned'])/float(len(df_experiment_identifier_counts))
+# p_value_count_significant = sum(df_experiment_identifier_counts.ix[:, 'count_significant'] >= df_experiment_identifier_counts.ix['hic_1', 'count_significant'])/float(len(df_experiment_identifier_counts))
+# p_value_count_all = sum(df_experiment_identifier_counts.ix[:, 'count_all'] >= df_experiment_identifier_counts.ix['hic_1', 'count_all'])/float(len(df_experiment_identifier_counts))
 
 ################## Write csv to file ##################
 ### Sorting, inplace
-df.sort(['count_significant_pruned', 'count_significant'], ascending=False, inplace=True)
+df_experiment_identifier_counts.sort(['count_significant_pruned', 'count_significant'], ascending=False, inplace=True)
 ### Writing file
-df.to_csv(file_epistatic_counts_csv) # sep='\t', index=True, header=True
+df_experiment_identifier_counts.to_csv(file_epistatic_counts_csv) # sep='\t', index=True, header=True
 
 ################## Write stats file ##################
 
 with open(file_epistatic_stats, 'w') as fh:
 	fh.write( "count_unassigned: {}\n".format(count_unassigned) )
-	fh.write( "count_assigned: {}\n".format(count_assigned) )
+	fh.write( "count_assigned: {} ({:.2f} %)\n".format(count_assigned, count_assigned/float(count_unassigned+count_assigned)) )
 	fh.write( "count_null_false_positives: {}\n".format(count_null_false_positives) )
 	fh.write( "count_intrachromosomal_interactions: {} ({:.2f} %)\n".format(count_intrachromosomal_interactions, count_intrachromosomal_interactions/float(count_total)) )
 
-	fh.write( "HIC count_significant_pruned: {}\n".format(df.ix['hic_1', 'count_significant_pruned']) )
-	fh.write( "HIC count_significant: {}\n".format(df.ix['hic_1', 'count_significant']) )
+	fh.write( "HIC count_significant_pruned: {}\n".format(df_experiment_identifier_counts.ix['hic_1', 'count_significant_pruned']) )
+	fh.write( "HIC count_significant: {}\n".format(df_experiment_identifier_counts.ix['hic_1', 'count_significant']) )
+	fh.write( "HIC count_all: {}\n".format(df_experiment_identifier_counts.ix['hic_1', 'count_all']) )
 
-	fh.write( "p_value_count_significant_pruned: {}\n".format(p_value_count_significant_pruned) )
-	fh.write( "p_value_count_significant: {}\n".format(p_value_count_significant) )
+	fh.write( "p_value_dict[count_significant_pruned]: {}\n".format(p_value_dict['count_significant_pruned']) )
+	fh.write( "p_value_dict[count_significant]: {}\n".format(p_value_dict['count_significant']) )
+	fh.write( "p_value_dict[count_all]: {}\n".format(p_value_dict['count_all']) )
+
+	### OLD
+	# fh.write( "p_value_count_significant_pruned: {}\n".format(p_value_count_significant_pruned) )
+	# fh.write( "p_value_count_significant: {}\n".format(p_value_count_significant) )
+	# fh.write( "p_value_count_all: {}\n".format(p_value_count_all) )
 
 ###################################### Closing file handle ######################################
 
@@ -428,6 +450,101 @@ fh_unassigned.close()
 for fh in experiment_identifier_fh_dict.values():
 	fh.close()
 
+
+###################################### Plotting ######################################
+
+################## Histogram ##################
+print "will plot histogram now..."
+for column_name, series in df_experiment_identifier_counts.iteritems(): # Iterator over (column, series) pairs
+	print "PLOTTING HISTOGRAM FOR COLUMN_NAME: {}".format(column_name)
+	fig_filename = "{base}/fig_{plot}.{ext}".format(base=path_main_out, plot=column_name, ext="pdf")
+
+	x = series
+	plt.figure()
+	ax = plt.gca()  # NEEDED for "transform=ax.transAxes"
+	## OR --> fig, ax = plt.subplots(1)
+	## OR --> fig = plt.figure(); ax = fig.add_subplot(111)
+	_ = plt.hist(x, bins=500) # 100 looks ok # ---> The return value is a tuple (n, bins, patches) 
+
+	### Adding VERTICAL LINE for OBSERVED statistic (HiC)
+	xv1 = df_experiment_identifier_counts.ix['hic_1', column_name]
+	plt.axvline(xv1, color='blue', linestyle='dashed', linewidth=2)  # SEE --> http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.axhline
+	
+	### Adding p-value text
+	textstr = "p-value={p_value}".format(p_value=p_value_dict[column_name])
+	props = dict(boxstyle='round', facecolor='wheat', alpha=0.5) # # these are matplotlib.patch.Patch properties
+	# place a text box in upper left in axes coords
+	plt.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14, verticalalignment='top', bbox=props) # transform=ax.transAxes
+	### Our Favorite Recipes - Placing text boxes
+	# http://matplotlib.org/users/recipes.html#placing-text-boxes
+	# http://matplotlib.org/users/transforms_tutorial.html#transforms-tutorial
+	# http://matplotlib.org/api/text_api.html#matplotlib.text.Text
+
+	### Adding titles and labels
+	plt.title(column_name, fontsize=18)
+	plt.xlabel(column_name)
+	plt.ylabel('Counts')
+	plt.savefig(fig_filename)
+	plt.close() # or plt.close(fig)
+
+
+################## Subplot histogram ##################
+subplot_n_row = len(df_experiment_identifier_counts.columns)
+print "subplot_n_row={}".format(subplot_n_row)
+for subplot_no, (column_name, series) in enumerate(df_experiment_identifier_counts.iteritems(), start=0): # Iterator over (column, series) pairs
+	print "PLOTTING SUBPLOT HISTOGRAM FOR COLUMN_NAME: {}".format(column_name)
+	print "subplot_no={}".format(subplot_no)
+
+	x = series
+	
+
+	ax = plt.subplot(subplot_n_row, 1, subplot_no) # .subplot(nrow, ncol, plot_idx)
+	### matplotlib.pyplot.subplot(*args, **kwargs)
+	# Return a subplot axes positioned by the given grid definition.
+	# Typical call signature:
+	# subplot(nrows, ncols, plot_number)
+
+
+	### OR ###
+	# fig, ax = plt.subplots(10, 10)
+	# where ax will contain one hundred axis in a list (of lists).
+	#Definition: plt.subplots(nrows=1, ncols=1, sharex=False, sharey=False, squeeze=True, subplot_kw=None, **fig_kw)
+	#Create a figure with a set of subplots already made.
+
+	_ = plt.hist(x, bins=500) # 100 looks ok # ---> The return value is a tuple (n, bins, patches) 
+	### CONSIDER: ax.hist()
+
+	### Adding VERTICAL LINE for OBSERVED statistic (HiC)
+	xv1 = df_experiment_identifier_counts.ix['hic_1', column_name]
+	plt.axvline(xv1, color='blue', linestyle='dashed', linewidth=2)  # SEE --> http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.axhline
+
+
+	### Adding p-value text
+	textstr = "p-value={p_value:.3f}".format(p_value=p_value_dict[column_name])
+	props = dict(boxstyle='round', facecolor='wheat', alpha=0.5) # # these are matplotlib.patch.Patch properties
+	# place a text box in upper left in axes coords
+	plt.text(0.95, 0.95, textstr, transform=ax.transAxes, fontsize=14, verticalalignment='top', horizontalalignment='right', bbox=props) # transform=ax.transAxes
+	# plt.text(x, x, string)
+	### Our Favorite Recipes - Placing text boxes
+	# http://matplotlib.org/users/recipes.html#placing-text-boxes
+	# http://matplotlib.org/users/transforms_tutorial.html#transforms-tutorial
+	# http://matplotlib.org/api/text_api.html#matplotlib.text.Text
+
+	### Adding axis labels and title
+	plt.xlabel(column_name)
+	plt.ylabel('Counts')
+	plt.title(column_name, fontsize=18)
+
+plt.tight_layout()
+#plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+## http://matplotlib.org/users/tight_layout_guide.html
+## http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.tight_layout
+## http://matplotlib.org/faq/howto_faq.html#move-the-edge-of-an-axes-to-make-room-for-tick-labels
+
+fig_filename = "{base}/fig_{plot}.{ext}".format(base=path_main_out, plot="subplot", ext="pdf")
+### saving fig
+plt.savefig(fig_filename)
+plt.close() # or plt.close(fig)
 
 
 print "The script is complete!"
@@ -457,4 +574,32 @@ print "The script is complete!"
 	# 	logs_worker/								[optional]
 
 	# The program relies on the *specific names* in fastEpi_compiled to match the specified pattern.
+
+###################################### ABOUT MATPLOTLIB Axes ######################################
+### Ref: http://stackoverflow.com/a/11786526
+
+# There is a helpful page here, which provides an overview of the classes in matplotlib.
+
+# Essentially, the process is:
+
+# Create a figure which can hold Axes instances (and other artists)
+# Create a canvas for the figure to draw itself to
+# Create an Axes instance, ax, to which plotted lines/patches etc can be added. e.g. ax.plot(range(10)) or ax.contourf(array)
+# I think your confusion comes from the understanding of what an Axes is. It is "the rectangular area which holds the basic elements" (for rectilinear plots). By default there is only one Axes in a figure, no matter how many times you run the command plt.plot(range(10)), although you may decide to use plt.subplot to have sub-plots in your figure, in which case you would have many Axes instances in your figure.
+
+# HTH,
+
+
+###################################### ?? ######################################
+
+# def example_plot(ax, fontsize=12):
+#      ax.plot([1, 2])
+#      ax.locator_params(nbins=3)
+#      ax.set_xlabel('x-label', fontsize=fontsize)
+#      ax.set_ylabel('y-label', fontsize=fontsize)
+#      ax.set_title('Title', fontsize=fontsize)
+
+# plt.close('all')
+# fig, ax = plt.subplots()
+# example_plot(ax, fontsize=24)
 
