@@ -58,6 +58,9 @@ import pdb
 ### hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8
 #python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/500_snppool_hIMR90_q_1e-06 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-06.nperm_1000.txt --q_threshold 1e-06 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8/fastEpi_compiled
 
+### hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8
+#python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/2500_snppool_hIMR90_q_1e-07 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-07.nperm_1000.txt --q_threshold 1e-07 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8/fastEpi_compiled
+
 
 
 
@@ -310,7 +313,7 @@ with open(file_bonferroni_correction, 'w') as fh_bon:
 		#print key, bonferroni_correction_dict[key]
 
 
-print "Writing file_SNP2interaction_map"
+print "Writing file_SNP2interaction_map. FORMAT=txt"
 ################## file_SNP2interaction_map ##################
 with open(file_SNP2interaction_map, 'w') as fh_map:
 	for snp in sorted(SNP2interaction_dict): # .items() does not work because we are using sorted() 
@@ -323,8 +326,8 @@ with open(file_SNP2interaction_map, 'w') as fh_map:
 
 ################## Pickle ##################
 
+print "Writing file_SNP2interaction_map. FORMAT=pickle"
 file_SNP2interaction_map_pickle = path_main_out + "/SNP2interaction_map.pickle" # add information about origin of file
-
 with open(file_SNP2interaction_map_pickle, 'wb') as f:
 	pickle.dump(SNP2interaction_dict, f, protocol=2) # pickle.dump(obj, file[, protocol]). pickle.HIGHEST_PROTOCOL
 

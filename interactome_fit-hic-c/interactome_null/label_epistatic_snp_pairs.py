@@ -43,6 +43,22 @@ ALPHA = 0.05
 #python label_epistatic_snp_pairs.py --path_main_input /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10/fastEpi_compiled
 	# ---> runtime: XXX
 
+### hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8
+#python label_epistatic_snp_pairs.py --path_main_input /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8/fastEpi_compiled
+	# ---> runtime: XXX
+
+### hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8
+#python label_epistatic_snp_pairs.py --path_main_input /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8/fastEpi_compiled
+	# ---> runtime: XXX
+
+### hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
+#python label_epistatic_snp_pairs.py --path_main_input /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8/fastEpi_compiled
+	# ---> runtime: XXX
+
+
+
+
+
 ################## OSX ##################
 ### hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
 #python label_epistatic_snp_pairs.py --path_main_input /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
