@@ -49,6 +49,8 @@ import pdb
 
 
 ################## Broad ##################
+
+####### hIMR90 #######
 ### hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10
 #python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/50000_snppool_hIMR90_q_1e-09 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-09.nperm_1000.txt --q_threshold 1e-09 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10/fastEpi_compiled
 
@@ -61,8 +63,15 @@ import pdb
 ### hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8
 #python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/2500_snppool_hIMR90_q_1e-07 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-07.nperm_1000.txt --q_threshold 1e-07 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8/fastEpi_compiled
 
+####### hESC #######
+### hESC_width_1000_maf_5_q_1e-12_epi1_1e-10
+#python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/1000_snppool_hESC_q_1e-12 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hESC.q_1e-12.nperm_1000.txt --q_threshold 1e-12 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_1000_maf_5_q_1e-12_epi1_1e-10/cat_epistasis_150210_125525
+#bsub -J gen_map_40GB_MEDPOP -q MEDPOP -R 'rusage[mem=40]' -o fastEpi_compiled_MEDPOP_40GB.bsub.out python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/1000_snppool_hESC_q_1e-12 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hESC.q_1e-12.nperm_1000.txt --q_threshold 1e-12 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_1000_maf_5_q_1e-12_epi1_1e-10/fastEpi_compiled_MEDPOP_40GB
+#bsub -J gen_map_40GB_week -q week -R 'rusage[mem=40]' -o fastEpi_compiled_week_40GB.bsub.out python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/1000_snppool_hESC_q_1e-12 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hESC.q_1e-12.nperm_1000.txt --q_threshold 1e-12 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_1000_maf_5_q_1e-12_epi1_1e-10/fastEpi_compiled_week_40GB
+#bsub -J gen_map_20GB_week -q week -R 'rusage[mem=20]' -o fastEpi_compiled_week_20GB.bsub.out python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/1000_snppool_hESC_q_1e-12 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hESC.q_1e-12.nperm_1000.txt --q_threshold 1e-12 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_1000_maf_5_q_1e-12_epi1_1e-10/fastEpi_compiled_week_20GB
 
-
+#bsub -J gen_map_40GB -q priority -R 'rusage[mem=40]' -o fastEpi_compiled_priority_40GB.bsub.out python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/1000_snppool_hESC_q_1e-12 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hESC.q_1e-12.nperm_1000.txt --q_threshold 1e-12 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_1000_maf_5_q_1e-12_epi1_1e-10/fastEpi_compiled_priority_40GB
+#bsub -J gen_map_10GB -q priority -R 'rusage[mem=10]' -o /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_1000_maf_5_q_1e-12_epi1_1e-10/fastEpi_compiled_priority_40GB.bsub.out python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/1000_snppool_hESC_q_1e-12 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hESC.q_1e-12.nperm_1000.txt --q_threshold 1e-12 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_1000_maf_5_q_1e-12_epi1_1e-10/fastEpi_compiled_priority_10GB
 
 ###################################### SYNOPSIS ######################################
 # ???
@@ -258,7 +267,7 @@ def populate_snp2interaction_dict():
 			experiment_type = column_name.split("_")[0] # {hic, null}
 			experiment_no = column_name.split("_")[1] # {1, 2, .., N_perm}
 			interaction_identifier = "{experiment_type}_{experiment_no}_{interaction_no}".format(experiment_type=experiment_type, experiment_no=experiment_no, interaction_no=interaction_no)
-			print interaction_identifier
+			#print interaction_identifier
 
 			### DEBUG			
 			# if interaction_identifier.endswith("_394"):
@@ -311,6 +320,7 @@ with open(file_bonferroni_correction, 'w') as fh_bon:
 	for key in sorted(bonferroni_correction_dict, key=lambda x: x.split("_")[-1]):
 		fh_bon.write( "{}\t{}\n".format(key, bonferroni_correction_dict[key]) )
 		#print key, bonferroni_correction_dict[key]
+print "Done"
 
 
 print "Writing file_SNP2interaction_map. FORMAT=txt"
@@ -320,16 +330,21 @@ with open(file_SNP2interaction_map, 'w') as fh_map:
 		set_string = ";".join(sorted(SNP2interaction_dict[snp])) # USING set() sorted set
 		#set_string = ";".join(SNP2interaction_dict[snp]) # # USING OrderedDict()
 		fh_map.write( "{}\t{}\t{}\n".format(snp, len(SNP2interaction_dict[snp]), set_string) )
+print "Done"
 
 
 ###################################### Alternative methods for writing files ######################################
 
 ################## Pickle ##################
+#ans = raw_input("'DEBUG mode': the program is about to write pickle file. Pres <Enter> to continue.")
+#print "Got answer: [{}]".format(ans)
 
 print "Writing file_SNP2interaction_map. FORMAT=pickle"
 file_SNP2interaction_map_pickle = path_main_out + "/SNP2interaction_map.pickle" # add information about origin of file
 with open(file_SNP2interaction_map_pickle, 'wb') as f:
 	pickle.dump(SNP2interaction_dict, f, protocol=2) # pickle.dump(obj, file[, protocol]). pickle.HIGHEST_PROTOCOL
+print "Done"
+
 
 ### File size
 #SNP2interaction_map_pickle: 74 KB

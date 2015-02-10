@@ -221,7 +221,7 @@ args = ParseArguments()
 
 ###################################### Paramters ######################################
 # ***OBS: this is the NUMBER of interactions to run per job.
-n_jobs_per_bsub = 125 #500 # 60 # --> RHEL WEEK
+n_jobs_per_bsub = 400 #500 # 60 # --> RHEL WEEK
 #n_jobs_per_bsub = 4 #25 # 100 # --> RHEL HOUR
 #n_jobs_per_bsub = 100 # --> RHEL HOUR v. 2
 #n_jobs_per_bsub = 2000 # --> MEDPOP
@@ -239,7 +239,7 @@ maf = "5"
 #interaction_width = "10000" # --> CentOS hour
 #interaction_width = "10000"
 #interaction_width = "2500" # --> RHEL week - LASTEST hIMR90
-interaction_width = "1000" # --> RHEL week - LASTEST hESC
+interaction_width = "500" # --> RHEL week - LASTEST hESC
 
 #hic_dataset = "hIMR90"
 hic_dataset = "hESC"
@@ -250,7 +250,8 @@ hic_dataset = "hESC"
 #q_threshold = "1e-06" # --> RHEL MEDPOP
 #q_threshold = "1e-10"
 #q_threshold = "1e-07" # --> RHEL week - LASTEST hIMR90
-q_threshold = "1e-12" # --> RHEL week - LASTEST hESC
+#q_threshold = "1e-16" # --> RHEL week - LASTEST hESC
+q_threshold = "1e-14" # --> RHEL week - LASTEST hESC
 
 ### Input BIM file: *UPS: keep this in sync!* ###
 #bfile = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean" # DO NOT ADD EXTENSION to file
@@ -267,11 +268,11 @@ else:
 	print "OK - found the file_set file. Will create symlink soon..."
 
 ### Significance threshold: epi1 ###
-epi1 = "1e-10" # string to set the significance thresshold
-epi2 = "1e-10" # string to set the significance thresshold
+#epi1 = "1e-10" # string to set the significance thresshold
+#epi2 = "1e-10" # string to set the significance thresshold
 
-#epi1 = "1e-8" # MEDPOP + RHEL hour v. 2
-#epi2 = "1e-8" # MEDPOP + RHEL hour v. 2
+epi1 = "1e-8" # MEDPOP + RHEL hour v. 2
+epi2 = "1e-8" # MEDPOP + RHEL hour v. 2
 
 
 
