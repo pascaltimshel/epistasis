@@ -221,8 +221,9 @@ def populate_snp2interaction_dict():
 	bonferroni_correction_dict = collections.defaultdict(int)
 	#SNP_interaction_count_dict = {}
 	
-	for column_name, series in df_null_table.iteritems(): # Iterator over (column, series) pairs
-		print "COLUMN_NAME: {}".format(column_name)
+	for column_no, (column_name, series) in enumerate(df_null_table.iteritems(), start=1): # Iterator over (column, series) pairs
+		#print "COLUMN_NAME: {}".format(column_name)
+
 		time_start = time.time()
 		series_corrected_offset = series-1 # We need to subtract one from the index because Pandas/Python is zero-based and R is one-based
 		for interaction_no, elem in enumerate(series_corrected_offset, start=1):
@@ -295,12 +296,16 @@ def populate_snp2interaction_dict():
 			tmp_correction = df_interaction_table_snps.ix[interaction_idx,"setA_size"] * df_interaction_table_snps.ix[elem,"setB_size"]
 			bonferroni_correction_dict[column_name] += tmp_correction
 
-		time_elapsed = time.time() - time_start
+		time_elapsed = time.time() - time_start # time nested loop
+		time_elapsed_populate_dict = time.time() - time_start_populate_dict # time main loop
 		print "Elapsed time for one experiment: {} s ({} min)".format( time_elapsed, time_elapsed/60 )
+		print "Main loop | COLUMN_NAME: {identifer} | Experiment: #{status_current}/#{status_total} | {pct_complete:.2f} % done | {sec:.2f} sec [{min:.2f} min]".format(identifer=column_name, status_current=column_no, status_total=n_experiments, pct_complete=(column_no/float(n_experiments))*100, sec=time_elapsed_populate_dict, min=time_elapsed_populate_dict/60)
+		
 		#return (SNP2interaction_dict, bonferroni_correction_dict) # FOR TESTING QUICKLY!
 	return (SNP2interaction_dict, bonferroni_correction_dict)
 
 time_start_populate_dict = time.time()
+n_experiments = len(df_null_table.columns) # *OBS*
 (SNP2interaction_dict, bonferroni_correction_dict) = populate_snp2interaction_dict()
 time_elapsed_populate_dict = time.time() - time_start_populate_dict
 print "Elapsed time populate_snp2interaction_dict(): {} s ({} min)".format( time_elapsed_populate_dict, time_elapsed_populate_dict/60 )
