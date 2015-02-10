@@ -110,6 +110,15 @@ ggplot(df.perm.dup, aes(x=n_duplicates)) + stat_bin(aes(y=..count../sum(..count.
 ### Concatenate data frame 
 df.perm.concat <- data.frame(hic_1=seq(x), df.perm)
 
+########## Validation steps ##########
+### 1) The sum of each columns should be the same for all columns. This is because we are recycling indicies.
+colsum.df.perm.concat <- colSums(df.perm.concat)
+all(colsum.df.perm.concat == colsum.df.perm.concat[1]) # MUST BE TRUE. NB: the index "1" is abitrary
+### 2) ???
+
+
+#####################################
+
 ### Setting pathname
 file.interaction_table.basename.sans_ext <- file_path_sans_ext(basename(file.interaction_table)) # removing trailing ".txt"
 file.interaction_table.basename.sans_ext
