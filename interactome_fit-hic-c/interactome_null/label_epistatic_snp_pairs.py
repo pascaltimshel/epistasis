@@ -52,8 +52,8 @@ ALPHA = 0.05
 ### hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
 #python label_epistatic_snp_pairs.py --path_main_input /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8/fastEpi_compiled
 
-# hESC_width_1000_maf_5_q_1e-12_epi1_1e-10 - *UNFINISHED*
-#python label_epistatic_snp_pairs.py --path_main_input /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_1000_maf_5_q_1e-12_epi1_1e-10/cat_epistasis_150210_125525
+### hESC_width_1000_maf_5_q_1e-12_epi1_1e-10
+#python label_epistatic_snp_pairs.py --path_main_input /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_1000_maf_5_q_1e-12_epi1_1e-10/fastEpi_compiled
 
 
 
