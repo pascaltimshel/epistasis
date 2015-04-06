@@ -39,6 +39,7 @@ ALPHA = 0.05
 
 
 ################## Broad ##################
+##### hIMR90 #####
 ### hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10
 #python label_epistatic_snp_pairs.py --path_main_input /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10/fastEpi_compiled
 	# ---> runtime: 10-40 min
@@ -52,8 +53,18 @@ ALPHA = 0.05
 ### hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
 #python label_epistatic_snp_pairs.py --path_main_input /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8/fastEpi_compiled
 
+##### hESC #####
 ### hESC_width_1000_maf_5_q_1e-12_epi1_1e-10
 #python label_epistatic_snp_pairs.py --path_main_input /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_1000_maf_5_q_1e-12_epi1_1e-10/fastEpi_compiled
+
+### hESC_width_500_maf_5_q_1e-14_epi1_1e-8
+#python label_epistatic_snp_pairs.py --path_main_input /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_500_maf_5_q_1e-14_epi1_1e-8/fastEpi_compiled
+
+### hESC_width_500_maf_5_q_1e-16_epi1_1e-8
+#python label_epistatic_snp_pairs.py --path_main_input /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_500_maf_5_q_1e-16_epi1_1e-8/fastEpi_compiled
+
+### hESC_width_2500_maf_5_q_1e-13_epi1_1e-10
+#python label_epistatic_snp_pairs.py --path_main_input /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_2500_maf_5_q_1e-13_epi1_1e-10/fastEpi_compiled
 
 
 
@@ -152,8 +163,10 @@ file_epistatic_intrachromosomal = path_main_out + "/epistatic_intrachromosomal.t
 
 ################## Get input files ##################
 ### Get FastEpistasis compiled result file - GLOBBING ON FILENAME PATTERN
-glob_lm_file = glob.glob(path_main_input+"/*lm.combined.txt")
+glob_lm_pattern = path_main_input+"/*lm.combined.txt"
+glob_lm_file = glob.glob(glob_lm_pattern)
 if not len(glob_lm_file) == 1:
+	print "glob_lm_pattern: {}".format(glob_lm_pattern)
 	raise Exception( "glob_lm_file does not contain EXACTLY one matching file. Matches are:\n[{}]".format("\n".join(glob_lm_file)) )
 file_fastepistasis_lm_combined = glob_lm_file[0] # because of the above check, we know that the list only contains one element
 

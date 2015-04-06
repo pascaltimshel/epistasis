@@ -66,10 +66,19 @@ import pdb
 ####### hESC #######
 ### hESC_width_1000_maf_5_q_1e-12_epi1_1e-10
 #python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/1000_snppool_hESC_q_1e-12 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hESC.q_1e-12.nperm_1000.txt --q_threshold 1e-12 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_1000_maf_5_q_1e-12_epi1_1e-10/fastEpi_compiled
-	# --> max memory usage: ~16 GB
+	# --> MAX MEMORY USAGE: *~16 GB* (avg. memory=5.5GB)
 #bsub -J gen_map_40GB_MEDPOP -q MEDPOP -R 'rusage[mem=40]' -o fastEpi_compiled_MEDPOP_40GB.bsub.out python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/1000_snppool_hESC_q_1e-12 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hESC.q_1e-12.nperm_1000.txt --q_threshold 1e-12 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_1000_maf_5_q_1e-12_epi1_1e-10/fastEpi_compiled_MEDPOP_40GB
 
-#bsub -J gen_map_10GB -q priority -R 'rusage[mem=10]' -o /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_1000_maf_5_q_1e-12_epi1_1e-10/fastEpi_compiled_priority_40GB.bsub.out python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/1000_snppool_hESC_q_1e-12 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hESC.q_1e-12.nperm_1000.txt --q_threshold 1e-12 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_1000_maf_5_q_1e-12_epi1_1e-10/fastEpi_compiled_priority_10GB
+### hESC_width_500_maf_5_q_1e-14_epi1_1e-8
+#python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/1000_snppool_hESC_q_1e-14 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hESC.q_1e-14.nperm_1000.txt --q_threshold 1e-14 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_500_maf_5_q_1e-14_epi1_1e-8/fastEpi_compiled
+
+### hESC_width_500_maf_5_q_1e-16_epi1_1e-8
+#python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/1000_snppool_hESC_q_1e-16 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hESC.q_1e-16.nperm_1000.txt --q_threshold 1e-16 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_500_maf_5_q_1e-16_epi1_1e-8/fastEpi_compiled
+
+
+### hESC_width_2500_maf_5_q_1e-13_epi1_1e-10
+#python gen_SNP2interaction_map.py --path_interaction_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/2500_snppool_hESC_q_1e-13 --file_null_table /cvar/jhlab/timshel/egcut/interactome_fit-hi-c/null_table.fit-hi-c.nosex.interchromosomal.hESC.q_1e-13.nperm_1000.txt --q_threshold 1e-13 --path_main_out /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/hESC_width_2500_maf_5_q_1e-13_epi1_1e-10/fastEpi_compiled
+
 
 ###################################### SYNOPSIS ######################################
 # ???

@@ -283,7 +283,7 @@ for q_threshold in list_of_q_threshold:
 									'chr_A':chr_A,
 									'pos_A':pos_A,
 									'chr_B':chr_B,
-									'pos_B':pos_A,
+									'pos_B':pos_B,
 									'set_interchromosomal':1 if chr_A != chr_B else 0,
 									'set_distance': abs(pos_A - pos_B) if chr_A == chr_B else None, # or np.nan
 									'set_intersect':tmp_intersection,
@@ -315,7 +315,7 @@ for q_threshold in list_of_q_threshold:
 				'chr_A':chr_A,
 				'pos_A':pos_A,
 				'chr_B':chr_B,
-				'pos_B':pos_A,
+				'pos_B':pos_B,
 				'setA_size':len(df_A_extract),
 				'setB_size':len(df_B_extract),
 				'snps_A': ";".join(df_A_extract["snp"]),

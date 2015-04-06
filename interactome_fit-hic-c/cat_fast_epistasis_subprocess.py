@@ -112,6 +112,7 @@ f_combined.write(header+"\n")
 
 list_post_out_file_present = []
 list_post_out_file_missing = []
+list_post_out_file_empty = []
 dict_probe_epistatic_count = {}
 
 # SORTING on Illumina probe ID, e.g. "ILMN_2221"
@@ -142,18 +143,19 @@ for count, probe in enumerate(probes_sorted, start=1):
 	
 
 	if not os.path.exists(post_out_file):
-		with open(file_no_post_out_file, 'a') as f_no_post_file: # write in MAIN DIR
-			print "post_out_file not found: %s" % post_out_file
-			f_no_post_file.write("%s\tpost_out_file did not exist\n" % post_out_file)
-
-			### append to list
-			list_post_out_file_missing.append(illumina_probe_id)
+		print "post_out_file not found: %s" % post_out_file
+		### append to list
+		list_post_out_file_missing.append(illumina_probe_id)
 	else:
 		### READ and WRITE line-by-line
 		post_file_epistatic_count = 0
 		with open(post_out_file, 'r') as f:
-			next(f) # SKIPPING THE FIRST TWO LINES!
-			next(f)
+			try:
+				next(f) # SKIPPING THE FIRST TWO LINES!
+				next(f)
+			except StopIteration: # this expection is raised if the file has LESS THAN two lines (e.g. an empty file)
+				print "WARNING: StopIteration execption raise when reading file={}. File has less than two lines.".format(post_out_file)
+				list_post_out_file_empty.append(illumina_probe_id)
 			for line in f:
 				post_file_epistatic_count += 1
 				fields = line.strip().split() # IMPORTANT TO USE strip() without argument to remove BOTH leading and trailing whitespace
@@ -179,9 +181,11 @@ with open(file_probe_epistatic_count, 'w') as f_probe_epistatic_count: # APPENDI
 status_string = """
 len(list_post_out_file_present) = {}
 len(list_post_out_file_missing) = {}
+len(list_post_out_file_empty) = {}
 """.format( 
 	len(list_post_out_file_present), 
-	len(list_post_out_file_missing) 
+	len(list_post_out_file_missing),
+	len(list_post_out_file_empty)
 	)
 print status_string
 
@@ -191,6 +195,16 @@ with open(file_stat, 'w') as f_stat:
 	f_stat.write( "flag_probe_loading_method=%s\n" % flag_probe_loading_method ) 
 	f_stat.write( "Read list of probes from path: %s\n" % os.path.dirname(probes[0]) ) 
 	f_stat.write(status_string + '\n')
+
+
+
+with open(file_no_post_out_file, 'w') as f_no_post_file: # write in MAIN DIR
+	for illumina_probe_id in list_post_out_file_missing:
+		f_no_post_file.write("{}\tresult file did not exist\n".format(illumina_probe_id))
+	for illumina_probe_id in list_post_out_file_empty:
+		f_no_post_file.write("{}\tresult file was empty\n".format(illumina_probe_id))
+
+
 
 print "DONE!"
 
