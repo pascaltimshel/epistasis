@@ -2,6 +2,13 @@
 ### OSX files
 .DS_Store
 
+### R files
+.Rhistory
+*.RData
+
+### IPython
+.ipynb_checkpoints
+
 
 ###################################### SOME INSPIRATION from SCZ (*NOT ACTIVE*) ######################################
 ### R data files

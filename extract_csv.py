@@ -69,6 +69,17 @@ CheckArguments(args)
 LogArguments(args)
 
 delim = args.delim
+print r"PRINTING RAW STRING | BEFORE decoding. delim=[{}]".format(delim)
+### Decoding delim
+delim = delim.decode('string_escape')
+print r"PRINTING RAW STRING | AFTER decoding. delim=[{}]".format(delim)
+### SEE:
+# 1) http://stackoverflow.com/questions/5753332/passing-meta-characters-to-python-as-arguments-from-command-line
+	# -->	r'\t\n\v\r'.decode('string-escape')
+	#		'\t\n\x0b\r'
+# 2) http://stackoverflow.com/questions/4020539/process-escape-sequences-in-a-string-in-python
+
+
 file_input = args.file_input
 file_output = args.file_output
 
