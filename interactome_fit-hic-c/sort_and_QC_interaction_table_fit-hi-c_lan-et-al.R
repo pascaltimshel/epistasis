@@ -5,42 +5,29 @@
 
 library(reshape2)
 library(ggplot2)
-library(plyr)
-library(tools)
+#library(plyr)
+library(dplyr)
 
 rm(list=ls())
 
 wd <- "/Users/pascaltimshel/git/epistasis/interactome_fit-hic-c"
 setwd(wd)
 ######################
+################################# READ interaction table ############################
 
-################################# STATS interaction table ############################
-### hESC_HindIII - ~150 MB file
-
-### hIMR90_HindIII - ~60 MB file
-################################# LOADING interaction table ############################
-
-### hESC_HindIII
-file = path.expand("~/Dropbox/0_Projects/p_HiC_viz/RData/hESC_HindIII_hg19.spline_pass1.res10000.significances.q_lt_0.001.inter.RData") # df.interaction_table.hESC
-### hIMR90_HindIII
-#file = path.expand("~/Dropbox/0_Projects/p_HiC_viz/RData/hIMR90_HindIII_hg19.spline_pass1.res10000.significances.q_lt_0.001.inter.RData") # df.interaction_table.hIMR90
-
-### Load data
-load(file)
-
-### Switch - THIS MUST MATCH WITH the loaded data
-df.interaction_table <- df.interaction_table.hESC
-#df.interaction_table <- df.interaction_table.hIMR90
-hic_cell_type <- "hESC" # "hESC" "hIMR90"
-
-### Check data integrity
-anyNA(df.interaction_table) # False!
-head(df.interaction_table) # 9 columns
+### Lan et al., inter-chromosomal, 
+file.interaction_table <- "/Users/pascaltimshel/Dropbox/0_Projects/p_HiC/Lan_et_al_chromosomal_interactions/lift_findItersection.intersection.paste.clean.nosex.updatedIDs.interchromosomal.fit-hi-c"
+df.interaction_table <- read.table(file.interaction_table, sep="\t", h=T, stringsAsFactors=F)
 
 ### *CHANGE COLUMN NAMES*
 colnames(df.interaction_table) <- c("chrA", "posA", "chrB", "posB", "contactCount", "p.value", "q.value")
 head(df.interaction_table) # 9 columns
 str(df.interaction_table)
+
+### Check data integrity
+head(df.interaction_table) # 9 columns
+str(df.interaction_table)
+
 
 ### Adding interactionID column
 df.interaction_table$interactionID <- paste0("interaction_", 1:nrow(df.interaction_table))
@@ -54,35 +41,70 @@ bool.chrB.sex <- df.interaction_table$chrB %in% c("chrX", "chrY")
 sum(bool.chrA.sex); sum(bool.chrB.sex)
 sum(bool.chrA.sex | bool.chrB.sex) # OR-logic
 df.interaction_table <- df.interaction_table[!(bool.chrA.sex | bool.chrB.sex), ]
+  ## --> 0 removed for Lan et al. data
+
+######################### QC data - duplicates removal ################
+
+#x <- df.interaction_table %>% arrange(posA) # for manual inspection
+#bool.duplicates <- duplicated(subset(df.interaction_table, select = -interactionID))
+#sum(bool.duplicates)
+  # --> NO duplicates
+
+######################### QC data - outlier removal/"winsorizing" ################
+### QC/outlier removal
+# 1) we identify the "top hotspots": chromosomal coordinates with the most interactions (top X % most interactions)
+# 2) we remove any interactions containing the a "top hotspot".
+# NB: we use chr:pos as an identifier for the chrosmosomal coordinate.
+
+### Adding TEMPORARY "index keys" columns to df.interaction_table
+df.interaction_table$keyA <- with(df.interaction_table, paste0(chrA, ":", posA))
+df.interaction_table$keyB <- with(df.interaction_table, paste0(chrB, ":", posB))
+
+### Creating df with keyA and keyB VERTICALLY concattenated
+df.vertcat <- data.frame(key = c(df.interaction_table$keyA, df.interaction_table$keyB))
+nrow(df.vertcat) == 2*nrow(df.interaction_table) # --> TRUE
+
+### df.key.table: counts for each key (interaction partner/chromosomal coordinate)
+df.key.count <- as.data.frame(table(df.vertcat))
+df.key.count <- df.key.count %>% arrange(desc(Freq))
+df.key.count$percentage <- df.key.count$Freq/sum(df.key.count$Freq)*100
+
+### get percentile/quantiles
+probs <- seq(0,1,0.001) # steps of 0.1% (0.1/100)
+df.quantile <- data.frame(quantile=probs, quantile_value=quantile(df.key.count$Freq, probs=probs))
+df.quantile <- df.quantile %>% arrange(desc(quantile_value))
+cutoff.count <- df.quantile[df.quantile$quantile==0.999, "quantile_value"]
+cutoff.count
+
+### get keys (chromosomal coordinates) that are MORE EXTREME (>) the cutoff (99.9%)
+keys.outliers <- as.character(df.key.count[df.key.count$Freq > cutoff.count, 1])
+length(keys.outliers) # --> 3
+# df.vertcat	Freq
+# 1	chr5:133628145	478
+# 2	chr5:133628590	324
+# 3	chr5:133625948	174
+keys.outliers
+
+### Removing outliers - subsetting dataframe
+df.interaction_table.removed <- subset(df.interaction_table, keyA %in% keys.outliers | keyB %in% keys.outliers)
+df.interaction_table.keep <- subset(df.interaction_table, !(keyA %in% keys.outliers | keyB %in% keys.outliers))
+nrow(df.interaction_table.removed) # --> 976
+nrow(df.interaction_table.keep) # --> 2521
+nrow(df.interaction_table) == nrow(df.interaction_table.removed) + nrow(df.interaction_table.keep) # --> TRUE
 
 
-######################### FUNCTION: threshold on q-value #######################
-                                  # * DELETED *
 #################################################################################
 
-######################### SUBSETTING: threshold on q-value #######################
-### hIMR90 values
-#q.threshold <- 1e-6 # --> 26325
-#q.threshold <- 1e-7 # --> 8114
-#q.threshold <- 1e-8 # --> 3468
-#q.threshold <- 1e-9 # --> 1021
-#q.threshold <- 1e-10 # --> 432
-#q.threshold <- 1e-11 # --> 214
+######################### MAIN LOOP - sorting table #######################
+p.q.threshold <- c("OUTLIER_RM")
+#q.threshold <- "OUTLIER_RM" # for manual "execution" of for loop
+hic_cell_type <- "lan-et-al_K562"
+df.interaction_table.input2mainLoop <- subset(df.interaction_table.keep, select = c(-keyA, -keyB))
 
-### hESC values
-# q.threshold  1e-12	39966
-# q.threshold	1e-13	24084
-# q.threshold	1e-14	11919
-# q.threshold	1e-15	5221
-# q.threshold	1e-16	2665
-# q.threshold	1e-17	1285
-# q.threshold	1e-18	578
-
-#for (q.threshold in c(1e-5,1e-6,1e-7,1e-8,1e-9,1e-10,1e-11)) { # hIMR90
-for (q.threshold in c(1e-12,1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
-#for (q.threshold in c(1e-12)) { # test
+for (q.threshold in p.q.threshold) {
   time_start <- proc.time()
-  df.interaction_table.sub.q <- df.interaction_table[df.interaction_table$q.value<=q.threshold,]
+  #df.interaction_table.sub.q <- df.interaction_table[df.interaction_table$q.value<=q.threshold,]
+  df.interaction_table.sub.q <- df.interaction_table.input2mainLoop # ADJUSTED FOR Lan et al.
   n_int <- nrow(df.interaction_table.sub.q)
   cat(sprintf("q.threshold\t%s\t%s\n", q.threshold, n_int))
   head(df.interaction_table.sub.q)
@@ -100,7 +122,7 @@ for (q.threshold in c(1e-12,1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
   str(df.interaction_table.sub.q)
   df.loci.sort <- sort_interactions(df.interaction_table.sub.q[, c("chrA", "posA", "chrB", "posB")])
   ### Check: chrA<=chrB
-  with(df.loci.sort, all(chrA<=chrB))
+  stopifnot(with(df.loci.sort, all(chrA<=chrB)))
   
   ### Check that the positions are corectly swapped in the sorted data frame
   df.interaction_table.sub.q[316,]
@@ -113,7 +135,7 @@ for (q.threshold in c(1e-12,1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
   ######################### Check for duplicate interactions #############################
   ### Identifiying duplicates - first occurrence of record will *NOT* be marked as duplicate
   bool.duplicates <- duplicated(subset(df.interaction_table.sub.q.sorted, select = c("chrA", "posA", "chrB", "posB")))
-  sum(bool.duplicates) 
+  sum(bool.duplicates) # Lan et al --> 1258
   if (sum(bool.duplicates) != 0) {
     print(sprintf("Warning: detected %s duplicates in the interaction table", sum(bool.duplicates)))
     cat("Press [enter] to continue and duplicates will be removed")
@@ -124,8 +146,6 @@ for (q.threshold in c(1e-12,1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
   ### Removing duplicates
   df.interaction_table.sub.q.sorted <- subset(df.interaction_table.sub.q.sorted, !bool.duplicates)
   print(sprintf("number of interactions AFTER duplicate removal: %s", nrow(df.interaction_table.sub.q.sorted)))
-  
-  
   
   ######################### EXPORTING interaction table #############################
   
@@ -142,5 +162,16 @@ for (q.threshold in c(1e-12,1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
   print(sprintf("Time elapsed, q=%s: %s", q.threshold, time_elapsed[3]))
 }
 
+#str(df.loci.sort)
+#str(df.interaction_table.sub.q.sorted)
+
+##### Finding the counts/occurences for each genomic locations:
+# a <- with(df.interaction_table, paste0(chrA, ":", posA))
+# b <- with(df.interaction_table, paste0(chrB, ":", posB))
+# x <- data.frame(t=c(a, b))
+# x2 <- x %>% distinct() # --> 2021
+# 
+# df.table <- as.data.frame(table(x))
+# df.table.s <- df.table %>% arrange(desc(Freq))
 
 
