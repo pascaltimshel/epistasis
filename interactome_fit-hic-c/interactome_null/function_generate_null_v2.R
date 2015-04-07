@@ -40,7 +40,7 @@ perm_restricted <- function(n_perm, df.interaction_table) {
   ################## Parameters ##################
   param.null.inter_chromosomal <- TRUE      # bool. if TRUE, then the null will only contain inter chromosomal interactions
   param.distance_restriction <- TRUE        # bool. if TRUE, then the null will enforce a distance restriction given by "param.distance_restriction.value", to ensure that the partnerB and "permuted partnerB" is seperated by a minimum distance. Without this option enabled, the null and hi-c could potentially share SNP-pairs
-  param.distance_restriction.value <- 1e5  # integer (bp). Set the minimal distance between any interactions 
+  param.distance_restriction.value <- 1e6  # integer (bp). Set the minimal distance between any interactions 
                                             # *OBS* this parameter is only active if "param.distance_restriction" is TRUE
                                             # 1e5: 100 kb
                                             # 1e6 1 Mb
@@ -80,7 +80,9 @@ perm_restricted <- function(n_perm, df.interaction_table) {
     ### ^^OBS: it is important loop "over rows". This allows us to make sure that there are no duplicate index per row.
     
     ### Display mesage
-    print(sprintf("#%s/#%s", interaction_no, n_interactions))
+    if (interaction_no %% 25 == 0) { # x %% y  modulus (x mod y)
+      print(sprintf("#%s/#%s", interaction_no, n_interactions))
+    }
     
     ######## Defining variables ########
     ### Extracting variables
@@ -117,7 +119,8 @@ perm_restricted <- function(n_perm, df.interaction_table) {
     # select partnerB that are *NOT* on same chromosome as partnerA
     if (param.null.inter_chromosomal) {
       pool_valid_partners <- pool_valid_partners %>%
-        filter(chrA != now.partnerA.chr)
+        filter(now.partnerA.chr != chrB)
+        #filter(chrA != now.partnerA.chr)
     }
     now.n_pool.s2 <- nrow(pool_valid_partners)
     

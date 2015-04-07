@@ -13,11 +13,42 @@ library(reshape2)
 
 rm(list=ls())
 
-wd <- path.expand('~/git/epistasis/interactome_fit-hic-c/interactome_null')
-setwd(wd)
+################################################################################################
+###################################### Broad/OSX switch ########################################
+################################################################################################
+
+#os.execution <- "broad"
+os.execution <- "osx"
+
+###################################### Switch ###################################### 
+if (os.execution == "osx") {
+  wd <- path.expand('~/git/epistasis/interactome_fit-hic-c/interactome_null')
+  setwd(wd)
+  
+  ### Set paths
+  path.interaction_tables <- path.expand("~/p_HiC/Ferhat_Ay_2014/interaction_tables")
+  path.out.diagnostics.base = path.expand("~/p_HiC/Ferhat_Ay_2014/interaction_tables/null_v2")
+  path.out.export = path.expand("~/p_HiC/Ferhat_Ay_2014/interaction_tables/null_v2")
+  
+} else if (os.execution == "broad") {
+  options(echo=TRUE)
+  wd <- path.expand('~/git/epistasis/interactome_fit-hic-c/interactome_null')
+  setwd(wd)
+  
+  ### Set paths
+  path.interaction_tables <- path.expand("cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interaction_tables/tables_v1")
+  path.out.diagnostics.base = path.expand("cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interaction_tables/null_v2")
+  path.out.export = path.expand("cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interaction_tables/null_v2")
+  
+} else {
+  stop("Did not recognize os.execution argument")
+}
+################################################################################################
+################################################################################################
 
 
 ###################### SOURCE ####################
+#source(file="function_generate_null_v2_parallel.R")
 source(file="function_generate_null_v2.R")
 source(file="function_generate_null_utils_v2.R")
 ##################################################
@@ -25,30 +56,33 @@ source(file="function_generate_null_utils_v2.R")
 
 ###################### Read interaction table ####################
 n_perm <- 1000
-hic_cell_type <- "hESC" # "hESC" OR "hIMR90"
-#hic_cell_type <- "hIMR90" # "hESC" OR "hIMR90"
+#hic_cell_type <- "hESC" # "hESC" OR "hIMR90"
+hic_cell_type <- "hIMR90" # "hESC" OR "hIMR90"
 
 ### hIMR90
-#p.q.threshold <- 1e-06 --> ??
-#p.q.threshold <- 1e-07 --> 5 min
-#p.q.threshold <- 1e-08 --> 1.2 min
-#p.q.threshold <- 1e-09
-#p.q.threshold <- 1e-10
+# 1e-06 [26 k interactions] --> ??
+# 1e-07 --> 5 min
+# 1e-08 --> 1.2 min
+# 1e-09
+# 1e-10
 
 ### hESC
-# 1e-13 --> XX min
+# 1e-12 [39 k interactions] --> 192 min (3.2 h)
+# 1e-13 [~25 k interactions] --> 56 min
+# 1e-14 --> 10 min
 
 list.timing.loop <- list()
 
-for (p.q.threshold in c(1e-12,1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
+#for (p.q.threshold in c(1e-12,1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
 #for (p.q.threshold in c(1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
-#for (p.q.threshold in c(1e-16)) {
-#for (p.q.threshold in c(1e-06, 1e-07, 1e-08, 1e-09, 1e-10)) { # IMR90
+#for (p.q.threshold in c(1e-08, 1e-09, 1e-10)) {
+for (p.q.threshold in c(1e-06, 1e-07, 1e-08, 1e-09, 1e-10)) { # IMR90
   time_start <- proc.time()
   
-  str.path <- "/Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/tables_v1/interation_table.fit-hi-c.nosex.interchromosomal.%s.q_%s.txt" # e.g. interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-07.txt
+  #str.path <- "/Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/tables_v1/interation_table.fit-hi-c.nosex.interchromosomal.%s.q_%s.txt" # e.g. interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-07.txt
+  str.path <- file.path(path.interaction_tables, "tables_v1/interation_table.fit-hi-c.nosex.interchromosomal.%s.q_%s.txt") # e.g. interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-07.txt
   file.interaction_table <- sprintf(str.path, hic_cell_type, p.q.threshold)
-  file.interaction_table
+  print(file.interaction_table)
   
   df.interaction_table <- read.table(file=file.interaction_table, h=T, sep="\t", stringsAsFactors=F)
   
@@ -68,14 +102,22 @@ for (p.q.threshold in c(1e-12,1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
   ################################################################################################
   ###################################### Make diagnostics ########################################
   ################################################################################################
-  path.out.diagnostics = path.expand("~/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/interaction_tables/null_v2") # no trailing slash
-  source(file="script_null_diagnostics_v2.R") # this script will run all the nessesary steps
+  # REMEMBER TO SET "path.out.diagnostics" BEFORE SOURCING/RUNNING "script_null_diagnostics_v2.R"
+  path.out.diagnostics <- file.path(path.out.diagnostics.base, hic_cell_type)
+  if (file.exists(path.out.diagnostics)) {
+    print("OBS: path.out.diagnostics folder exists")
+  }
+  dir.create(path.out.diagnostics, showWarnings=FALSE) # dir.create() does NOT crash if the directory already exists, it just prints out a warning.
+  print(path.out.diagnostics) # no trailing slash
+  
+  # this script will run all the nessesary steps for generating DIAGNOSTIC PLOTS
+  source(file="script_null_diagnostics_v2.R")
   
   ################################################################################################
   ############################################ EXPORT ############################################
   ################################################################################################
-  path.out = path.expand("~/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/interaction_tables/null_v2")
-  write_df.perm(path.out=path.out)
+  ### REMEMBER to set path.out.export before running function
+  write_df.perm(path.out=path.out.export)
   
   
   #####################################
@@ -86,7 +128,7 @@ for (p.q.threshold in c(1e-12,1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
   list.timing.loop[[as.character(p.q.threshold)]] <- time_elapsed[3]
 }
 
-list.timing.loop
+print(list.timing.loop)
 
 
 

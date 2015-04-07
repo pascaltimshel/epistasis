@@ -36,15 +36,14 @@ import pdb
 
 ################## OSX ##################
 ### fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
-#python gen_SNP2interaction_map.py --path_interaction_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_snpsets/maf_5_sets/500_snppool_hIMR90_q_1e-08 --file_null_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-08.nperm_1000.txt --q_threshold 1e-08 --path_main_out /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
-# mprof run gen_SNP2interaction_map.py XXX
+#python gen_SNP2interaction_map.py --path_interaction_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_snpsets/maf_5_sets/hIMR90_width_500_maf_5_q_1e-08 --file_null_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/null_v2/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-08.nperm_1000.txt --q_threshold 1e-08 --path_main_out /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
 
 ### fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8
-#python gen_SNP2interaction_map.py --path_interaction_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_snpsets/maf_5_sets/500_snppool_hIMR90_q_1e-06 --file_null_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-06.nperm_1000.txt --q_threshold 1e-06 --path_main_out /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8
+#python gen_SNP2interaction_map.py --path_interaction_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_snpsets/maf_5_sets/hIMR90_width_500_maf_5_q_1e-06 --file_null_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/null_v2/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-06.nperm_1000.txt --q_threshold 1e-06 --path_main_out /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8
 
 
 ### hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10 (could not complete - TOO MUCH MEMORY?)
-#python gen_SNP2interaction_map.py --path_interaction_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_snpsets/maf_5_sets/50000_snppool_hIMR90_q_1e-09 --file_null_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-09.nperm_1000.txt --q_threshold 1e-09 --path_main_out /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10
+#python gen_SNP2interaction_map.py ....
 	# at null_192_1017 --> Segmentation fault: 11 (likely because it was using 6 GB memory)
 
 
