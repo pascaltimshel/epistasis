@@ -263,7 +263,7 @@ count_intrachromosomal_interactions = 0
 #epistatic_counts_dict = collections.defaultdict(lambda: collections.defaultdict(int)) # e.g. epistatic_counts_dict['MASTER_KEY']['EXPERIMENT_IDENTIFIER'] = INTEGER
 	# the expression inside the parenthesis must be a 'callable'. That is why I use a 'lambda function'
 epistatic_counts_dict = dict() #collections.defaultdict(dict)
-epistatic_counts_dict['count_significant_pruned'] = collections.defaultdict(set)
+epistatic_counts_dict['count_significant_pruned'] = collections.defaultdict(set) # *OBS*: set
 epistatic_counts_dict['count_significant'] = collections.defaultdict(int)
 epistatic_counts_dict['count_all'] = collections.defaultdict(int)
 	### MASTER KEYS IN DICT:
@@ -271,7 +271,11 @@ epistatic_counts_dict['count_all'] = collections.defaultdict(int)
 	# count_significant
 	# count_all
 
-#epistatic_counts_dict['count_significant'] = collections.defaultdict(int)
+### Dict for distribution of significant probe counts
+probe_counts_dict = dict()
+probe_counts_dict['count_assigned_significant'] = collections.defaultdict(int)
+probe_counts_dict['count_assigned'] = collections.defaultdict(int)
+probe_counts_dict['count_all'] = collections.defaultdict(int)
 
 ### Count the number of lines in the file
 n_lines_fastepistasis_lm_combined = sum(1 for line in open(file_fastepistasis_lm_combined)) # this is pretty fast (only a bit slower than "wc -l"). 3.5 sec for a 1 GB file
@@ -294,7 +298,8 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 		# 11	rs1508531	11	rs4939298	-0.13990	33.32995	7.77755E-09	ILMN_1716816
 		line = line.strip() # strip() without argument will remove BOTH leading and trailing whitespace.
 		fields = line.split() 
-		chr_A, snp_A, chr_B, snp_B, pvalue = fields[0], fields[1], fields[2], fields[3], float(fields[6])
+		chr_A, snp_A, chr_B, snp_B, pvalue, illumina_probe_id = fields[0], fields[1], fields[2], fields[3], float(fields[6]), fields[7]
+
 
 		set_A = SNP2interaction_dict[snp_A] # TODO: put this into a try/except or use dict.get() for a default value
 		set_B = SNP2interaction_dict[snp_B]
@@ -307,11 +312,24 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 			# null_1000_26312
 			# ....
 
+
+		### count_all
+		probe_counts_dict['count_all'][illumina_probe_id] += 1
+
+
 		### Mapping SNP-pairs to *UNASSIGNED* group
 		if len(set_AB)==0:
 			# assign to unassigned group
 			count_unassigned += 1
 			fh_unassigned.write(line + "\n")
+		else: # assigned state
+			### count_assigned 
+			probe_counts_dict['count_assigned'][illumina_probe_id] += 1
+
+			if pvalue <= bonferroni_correction_dict['hic_1']: # *OBS: hardcoded *experiment_identifier*!!!
+				# ^^ It makes sense to use the cut-off for hic_1 experiment as significant
+				### count_assigned_significant
+				probe_counts_dict['count_assigned_significant'][illumina_probe_id] += 1
 
 		##############################################################################
 		### Checking for *ASSINGED* INTRA chromosomal interactions
@@ -324,9 +342,12 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 
 		### Mapping SNP-pairs to their experiments
 		if len(set_AB)==1:
-			# assign to one group
+			### assign to one group
 			count_assigned += 1
-			experiment_interaction_identifier = iter(set_AB).next() # e.g. null_256_22233
+
+
+
+			experiment_interaction_identifier = iter(set_AB).next() # GET first (AND ONLY) element in set. e.g. null_256_22233
 			tmp_parts_list = experiment_interaction_identifier.split('_')
 			experiment_identifier = tmp_parts_list[0] + "_" + tmp_parts_list[1] # e.g. null_256
 
@@ -334,6 +355,7 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 				flag_significant = True
 				epistatic_counts_dict['count_significant'][experiment_identifier] += 1
 				epistatic_counts_dict['count_significant_pruned'][experiment_identifier].add(experiment_interaction_identifier)
+
 			else:
 				flag_significant = False
 
@@ -399,6 +421,11 @@ print "Done with main loop!"
 
 ###################################### Writing files ######################################
 
+### epistatic_counts.txt # *OBS*: this file is similar to file_epistatic_counts_csv, except for the following:
+# 1) file_epistatic_counts is not sorted
+# 2) file_epistatic_counts contains a column about bonferroni correction
+# 2) file_epistatic_counts has no header.
+# 2) file_epistatic_counts is tab seperated.
 with open(file_epistatic_counts, 'w') as fh:
 	#for experiment_identifier in sorted(epistatic_counts_dict, key=epistatic_counts_dict.get, reverse=True):
 	for experiment_identifier in bonferroni_correction_dict:
@@ -410,6 +437,12 @@ with open(file_epistatic_counts, 'w') as fh:
 												) # epistatic_counts_dict + epistatic_counts_dict['count_significant']
 		#fh.write( "{}\t{}\n".format(experiment_identifier, epistatic_counts_dict['count_all'][experiment_identifier]) ) # 
 
+
+###################################### CREATING DataFrame: Probe distribution ######################################
+
+## *FINISH ME*
+#df_probe_counts = pd.DataFrame(columns=epistatic_counts_dict.keys(), index=bonferroni_correction_dict.keys()) # initialize data frame with zeroes.
+#df_probe_counts = df_experiment_identifier_counts.fillna(0) # fill the data with 0s rather than NaNs
 
 ###################################### CREATING DataFrame: Calculating Empirical P-value ######################################
 
