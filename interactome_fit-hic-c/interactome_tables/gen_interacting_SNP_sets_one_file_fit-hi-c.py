@@ -63,27 +63,23 @@ interaction_width = int(args.width)
 ##############################################################################################
 ### *IMPORTANT*: setting the specificiers for the data set. THIS IS USED IN path_base_out *###
 #hic_data_set = "hIMR90"
-hic_data_set = "hESC"
+#hic_data_set = "hESC"
+hic_data_set = "lan-et-al_K562"
 
-list_of_q_threshold = ["1e-12", "1e-13", "1e-14", "1e-15", "1e-16", "1e-17", "1e-18"]
+maf_param = "5" # this is only used for naming the "path_base_out"
 
 ### Setting threshold
-#q_threshold = "1e-06" 
-#q_threshold = "1e-07"
-#q_threshold = "1e-08"
-#q_threshold = "1e-09"
-#q_threshold = "1e-10"
+#list_of_q_threshold = ["1e-06", "1e-07", "1e-08", "1e-09", "1e-10"] # hIMR90
+#list_of_q_threshold = ["1e-12", "1e-13", "1e-14", "1e-15", "1e-16", "1e-17", "1e-18"] # hESC
+list_of_q_threshold = ["OUTLIER_RM"] # lan-et-al_K562
+
 
 for q_threshold in list_of_q_threshold:
 	print "running {}".format(q_threshold)
 
-	file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.{dataset}.q_{q}.txt".format(dataset=hic_data_set, q=q_threshold)
+	file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interaction_tables/tables_v1/interation_table.fit-hi-c.nosex.interchromosomal.{dataset}.q_{q}.txt".format(dataset=hic_data_set, q=q_threshold)
 
 	#file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-06.txt"
-	#file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-07.txt"
-	#file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-08.txt"
-	#file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-09.txt"
-	#file_interactions = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-10.txt"
 
 	#file_interactions = "/cvar/jhlab/timshel/egcut/interactome/lift_findItersection.intersection.paste.updatedIDs"
 	#file_interactions = "/cvar/jhlab/timshel/egcut/interactome/lift_findItersection.intersection.paste.clean.nosex.updatedIDs.interchromosomal"
@@ -109,7 +105,9 @@ for q_threshold in list_of_q_threshold:
 
 
 	#path_base_out = "/Users/pascaltimshel/p_HiC/Lan_et_al_interaction_SNP_sets/{}".format(interaction_width) # OSX
-	path_base_out = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/{width}_snppool_{dataset}_q_{q}".format(width=interaction_width, dataset=hic_data_set, q=q_threshold) # BROAD
+	#path_base_out = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/{width}_snppool_{dataset}_q_{q}".format(width=interaction_width, dataset=hic_data_set, q=q_threshold) # BROAD
+	path_base_out = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interaction_snpsets/maf_5_sets/{dataset}_width_{width}_maf_{maf}_q_{q}".format(dataset=hic_data_set, width=interaction_width, maf=maf_param, q=q_threshold) # BROAD, e.g. hIMR90_width_50000_maf_5_q_1e-09
+	
 
 	path_snp_sets = path_base_out+"/snp_sets"
 	path_figs = path_base_out+"/figs"

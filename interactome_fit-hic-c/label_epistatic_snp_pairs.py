@@ -257,6 +257,7 @@ fh_unassigned = open(file_unassigned, 'w')
 count_total = 0
 count_unassigned = 0
 count_assigned = 0
+count_multiple_assignments = 0
 count_null_false_positives = 0
 count_intrachromosomal_interactions = 0
 #epistatic_counts_dict = collections.defaultdict(lambda: collections.defaultdict(int)) # e.g. epistatic_counts_dict['MASTER_KEY']['EXPERIMENT_IDENTIFIER'] = INTEGER
@@ -387,7 +388,9 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 
 				experiment_identifier_fh_dict[experiment_identifier].write( "{}\t{}\t{}\n".format(line, experiment_interaction_identifier, flag_significant) )
 				
-					
+			### increment count
+			count_multiple_assignments += 1
+
 			### multiple assignment file
 			fh_multiple_assignments.write(line + "\t" + ";".join(set_AB) + "\n")
 
@@ -450,9 +453,10 @@ df_experiment_identifier_counts.to_csv(file_epistatic_counts_csv) # sep='\t', in
 
 with open(file_epistatic_stats, 'w') as fh:
 	fh.write( "count_unassigned: {}\n".format(count_unassigned) )
-	fh.write( "count_assigned: {} ({:.2f} %)\n".format(count_assigned, count_assigned/float(count_unassigned+count_assigned)) )
+	fh.write( "count_assigned: {} ({:.2f} % of total)\n".format(count_assigned, count_assigned/float(count_total)*100) )
+	fh.write( "count_multiple_assignments: {} ({:.2f} % of count_assigned)\n".format(count_multiple_assignments, count_multiple_assignments/float(count_assigned)*100) )
 	fh.write( "count_null_false_positives: {}\n".format(count_null_false_positives) )
-	fh.write( "count_intrachromosomal_interactions: {} ({:.2f} %)\n".format(count_intrachromosomal_interactions, count_intrachromosomal_interactions/float(count_total)) )
+	fh.write( "count_intrachromosomal_interactions: {} ({:.2f} % of total)\n".format(count_intrachromosomal_interactions, count_intrachromosomal_interactions/float(count_total)*100) )
 
 	fh.write( "HIC count_significant_pruned: {}\n".format(df_experiment_identifier_counts.ix['hic_1', 'count_significant_pruned']) )
 	fh.write( "HIC count_significant: {}\n".format(df_experiment_identifier_counts.ix['hic_1', 'count_significant']) )

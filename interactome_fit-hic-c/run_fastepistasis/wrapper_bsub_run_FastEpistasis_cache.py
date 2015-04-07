@@ -229,7 +229,8 @@ n_jobs_per_bsub = 200 #500 # 60 # --> RHEL WEEK
 #n_jobs_per_bsub = 20 # --> CentOS HOUR
 
 ### IMPORTANT: define the script to call
-script2call = "/cvar/jhlab/timshel/git/epistasis/interactome_fit-hic-c/run_fast_epistasis_inputlist.py"
+#script2call = "/cvar/jhlab/timshel/git/epistasis/interactome_fit-hic-c/run_fast_epistasis_inputlist.py"
+script2call = "/cvar/jhlab/timshel/git/epistasis/interactome_fit-hic-c/run_fastepistasis/run_fast_epistasis_inputlist.py"
 
 ######################################  ######################################
 ### Overall parameters
@@ -241,19 +242,25 @@ maf = "5"
 #interaction_width = "10000"
 #interaction_width = "2500" # --> RHEL week - LASTEST hIMR90
 #interaction_width = "2500" # --> RHEL week - LASTEST hESC
-interaction_width = "1000" # --> RHEL week
+#interaction_width = "1000" # --> RHEL week
+interaction_width = "5000" # --> RHEL week
 
-hic_dataset = "hIMR90"
+#hic_dataset = "hIMR90"
 #hic_dataset = "hESC"
+hic_dataset = "lan-et-al_K562"
 
 #q_threshold = "1e-09" # --> RHEL hour
 #q_threshold = "1e-08" # --> CentOS hour
 #q_threshold = "1e-08" # --> RHEL hour v. 2
-q_threshold = "1e-06" # --> RHEL week
+#q_threshold = "1e-06" # --> RHEL week
 #q_threshold = "1e-10"
 #q_threshold = "1e-07" # --> RHEL week - LASTEST hIMR90
 #q_threshold = "1e-13" # --> RHEL week - LASTEST hESC
 #q_threshold = "1e-14" # --> RHEL week - LASTEST hESC
+
+q_threshold = "OUTLIER_RM" # --> lan_et_al
+
+
 
 ### Input BIM file: *UPS: keep this in sync!* ###
 #bfile = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean" # DO NOT ADD EXTENSION to file
@@ -263,18 +270,19 @@ path_files = "/cvar/jhlab/timshel/egcut/ETypes_probes_norm_peer/phenofile_log2_k
 #file_set = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/10000_snppool_hIMR90_q_1e-07/snp_sets/set_AB.txt"
 
 ### Formatting file_set
-file_set = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_{maf}_sets/{interaction_width}_snppool_{hic_dataset}_q_{q_threshold}/snp_sets/set_AB.txt".format(maf=maf, interaction_width=interaction_width, hic_dataset=hic_dataset, q_threshold=q_threshold)
+#file_set = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_{maf}_sets/{interaction_width}_snppool_{hic_dataset}_q_{q_threshold}/snp_sets/set_AB.txt".format(maf=maf, interaction_width=interaction_width, hic_dataset=hic_dataset, q_threshold=q_threshold)
+file_set = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/interaction_snpsets/maf_{maf}_sets/{hic_dataset}_width_{interaction_width}_maf_{maf}_q_{q_threshold}/snp_sets/set_AB.txt".format(maf=maf, interaction_width=interaction_width, hic_dataset=hic_dataset, q_threshold=q_threshold)
 if not os.path.exists(file_set): # checks for a valid symbolic link. That is, it cannot be broken
 	raise Exception( "The file_set symlink is broken - path does not exists: {}".format(file_set) )
 else:
 	print "OK - found the file_set file. Will create symlink soon..."
 
 ### Significance threshold: epi1 ###
-epi1 = "1e-10" # string to set the significance thresshold
-epi2 = "1e-10" # string to set the significance thresshold
+#epi1 = "1e-10" # string to set the significance thresshold
+#epi2 = "1e-10" # string to set the significance thresshold
 
-#epi1 = "1e-8" # MEDPOP + RHEL hour v. 2
-#epi2 = "1e-8" # MEDPOP + RHEL hour v. 2
+epi1 = "1e-8" # MEDPOP + RHEL hour v. 2
+epi2 = "1e-8" # MEDPOP + RHEL hour v. 2
 
 
 
