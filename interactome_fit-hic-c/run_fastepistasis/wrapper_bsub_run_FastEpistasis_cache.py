@@ -222,6 +222,7 @@ args = ParseArguments()
 ###################################### Paramters ######################################
 # ***OBS: this is the NUMBER of interactions to run per job.
 n_jobs_per_bsub = 200 #500 # 60 # --> RHEL WEEK
+#n_jobs_per_bsub = 3 #500 # 60 # --> RHEL WEEK
 #n_jobs_per_bsub = 25 # *NEW*
 #n_jobs_per_bsub = 4 #25 # 100 # --> RHEL HOUR
 #n_jobs_per_bsub = 100 # --> RHEL HOUR v. 2

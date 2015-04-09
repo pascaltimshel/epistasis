@@ -60,6 +60,7 @@ file_lm_combined = "{path}/{parameters}__{time_stamp}___results.epi.qt.lm.combin
 file_no_post_out_file = "{path}/{parameters}__{time_stamp}___log_no_postFastEpistasis_file.txt".format( path=path_cat_epistasis, parameters=os.path.basename(path_main_fastepistasis), time_stamp=time_stamp )
 file_stat = "{path}/{parameters}__{time_stamp}___stat_file.txt".format( path=path_cat_epistasis, parameters=os.path.basename(path_main_fastepistasis), time_stamp=time_stamp )
 file_probe_epistatic_count = "{path}/{parameters}__{time_stamp}___probe_epistatic_count.txt".format( path=path_cat_epistasis, parameters=os.path.basename(path_main_fastepistasis), time_stamp=time_stamp )
+file_probe_list = "{path}/{parameters}__{time_stamp}___probe_list.txt".format( path=path_cat_epistasis, parameters=os.path.basename(path_main_fastepistasis), time_stamp=time_stamp )
 
 
 ###################################### LOADING PROBES ######################################
@@ -196,7 +197,13 @@ with open(file_stat, 'w') as f_stat:
 	f_stat.write( "Read list of probes from path: %s\n" % os.path.dirname(probes[0]) ) 
 	f_stat.write(status_string + '\n')
 
-
+##### Writing probes list
+with open(file_probe_list, 'w') as f_probe_list:
+	for probe in probes_sorted: # probes_sorted is sorted by illumina_probe_id, e.g. ILMN_2221
+		# probe --> e.g. /cvar/jhlab/timshel/egcut/fastEpistasis_fit-hi-ci/lan-et-al_K562_width_1000_maf_5_q_OUTLIER_RM_epi1_1e-8/link_probes/ILMN_1343291.pheno
+		illumina_probe_id = os.path.basename(probe).split(".")[0]
+		# illumina_probe_id --> e.g. ILMN_2221
+		f_probe_list.write( "{}\n".format(illumina_probe_id) )
 
 with open(file_no_post_out_file, 'w') as f_no_post_file: # write in MAIN DIR
 	for illumina_probe_id in list_post_out_file_missing:
