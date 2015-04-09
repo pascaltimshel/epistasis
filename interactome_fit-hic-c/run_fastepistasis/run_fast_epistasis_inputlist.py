@@ -275,9 +275,16 @@ for count, probe in enumerate(jobs, start=1):
 	core_dumps = glob.glob("core.*")
 	if core_dumps: # if not empty
 		for core_dump in core_dumps:
-			core_dump_file_size_mb = os.path.getsize(core_dump)/(1024*1024.0)
-			logger.critical( "WARNING: found core dump: %s (size=%s MB)" % (core_dump, core_dump_file_size_mb) )
-			os.remove(core_dump)
+			try:
+				core_dump_file_size_mb = os.path.getsize(core_dump)/(1024*1024.0)
+				logger.critical( "WARNING: found core dump: %s (size=%s MB)" % (core_dump, core_dump_file_size_mb) )
+				os.remove(core_dump)
+			except Exception as e:
+				logger.critical("Caught the follow Exception for core_dump={core_dump} in an attempt to [os.path.getsize(core_dump)] and [os.remove(core_dump)].".format(core_dump=core_dump) )
+				#logger.critical("Will continue as if nothings happend")
+				logger.critical("Will re-raise execption")
+				raise
+
 
 	################## Finishing ##################
 	time_probe_elapsed = time.time() - time_probe_start
