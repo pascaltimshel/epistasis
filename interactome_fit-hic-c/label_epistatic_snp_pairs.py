@@ -33,6 +33,47 @@ import pdb
 N_PHENOTYPES_TESTED = 9269
 ALPHA = 0.05
 
+###################################### Functions ######################################
+
+def makehash():
+	""" Function to create a perl-like hash. That is, a dict with autovivification """
+	return collections.defaultdict(makehash) 
+
+def function_sort_EID(EID):
+	""" 
+	Function to sort EID (experiment_identifier) for dicts. This is a UTILITY FUNCTION for sorted(a_dict, key=function_sort_EID)
+	EID type: string.
+	EID format example(s): hic_1, null_1, null_2
+
+	NOTICE that hic_1 and null_1 will get equal ranking because both return 1.
+	"""
+	experiment = EID.split("_")[0] # "hic" or "null"
+	
+	### We set a numeric "code" for the experiments, so "hic" has HIGHER PRECEDENCE for sorting.
+	if experiment == "hic":
+		experiment_ranking = 1
+	elif experiment == "null":
+		experiment_ranking = 2
+	else:
+		raise Exception( "Received unexpected experiment: {}. The function only expects experiments 'hic' or 'null'".format(experiment) )
+	### 
+	experiment_no = int(EID.split("_")[1]) # e.g. "1", "15" or "293" [range is 1...n_perm].
+	
+	tuple_to_sort_by = (experiment, experiment_no)
+	# SEE: Python secondary sorting: http://stackoverflow.com/a/16193637
+	return tuple_to_sort_by
+
+def function_sort_EIID(EIID):
+	"""
+	Function to sort EIID.
+	EIID type: string.
+	EIID format example(s): hic_1_2013, hic_1_2574, null_2_1074
+	
+	See function_sort_EID() for additional documentation.
+	"""
+	interaction_no = int(EIID.split("_")[-1]) # e.g. "2013" [range is 1..n_interactions]
+	return interaction_no
+
 ###################################### USAGE ######################################
 
 #python label_epistatic_snp_pairs.py --path_main_input XXX
@@ -152,9 +193,18 @@ path_main_out = path_main_input + "/assigned" # dir # hic_hypothesis_testing
 path_out_epistatic_results = path_main_out + "/epistatic_results" # dir
 extension_epistatic_results = "lm.combined.txt" # file extension name
 
+### Epistasis: epistasis tables
+file_epistasis_table = path_main_out + "/epistasis_table.txt"
+file_epistasis_table_pruned_EIID = path_main_out + "/epistasis_table_pruned_EIID.txt"
+file_epistasis_table_pruned_hemani = path_main_out + "/epistasis_table_pruned_hemani.txt"
+
+### Epistasis: experiment counts and stats file
 file_epistatic_counts = path_main_out + "/epistatic_counts.txt"
 file_epistatic_counts_csv = path_main_out + "/epistatic_counts.csv"
 file_epistatic_stats = path_main_out + "/epistatic_stats.txt"
+
+### Probes
+file_probe_counts_csv = path_main_out + "/probe_counts.csv"
 
 file_null_false_negatives = path_main_out + "/null_false_negatives.txt" # 
 file_epistatic_intrachromosomal = path_main_out + "/epistatic_intrachromosomal.txt" # 
@@ -170,6 +220,13 @@ if not len(glob_lm_file) == 1:
 	raise Exception( "glob_lm_file does not contain EXACTLY one matching file. Matches are:\n[{}]".format("\n".join(glob_lm_file)) )
 file_fastepistasis_lm_combined = glob_lm_file[0] # because of the above check, we know that the list only contains one element
 
+### Probe list
+glob_probe_list_pattern = path_main_input+"/*probe_list.txt"
+glob_probe_list_file = glob.glob(glob_probe_list_pattern)
+assert(len(glob_probe_list_file)==1) # error check
+file_probe_list = glob_probe_list_file[0] # because of the above check, we know that the list only contains one element
+
+### Maps and bonferroni correction
 file_SNP2interaction_map = path_main_input + "/SNP2interaction_map/SNP2interaction_map.pickle"
 file_bonferroni_correction = path_main_input + "/SNP2interaction_map/bonferroni_correction.txt"
 
@@ -198,6 +255,20 @@ for filename in [file_epistatic_intrachromosomal, file_null_false_negatives]:
 	if os.path.exists(filename):
 		print "Removing existing file: {}".format(filename)
 		os.remove(filename)
+
+###################################### Read file_probe_list ######################################
+probes_dict = dict()
+with open(file_probe_list, 'r') as fh:
+	# DESCRIPTION of file_probe_list
+	# with NO header
+	# One illumina_probe_id (e.g. ILMN_2221) per line
+	for line in fh:
+		illumina_probe_id = line.strip()
+		probes_dict[illumina_probe_id] = 1
+
+### Checks and variable definition
+n_probes = len(probes_dict.keys())
+assert(n_probes == N_PHENOTYPES_TESTED) # 9269
 
 ###################################### Read/Load input filesfile_SNP2interaction_map ######################################
 filesize_SNP2interaction_map = os.path.getsize(file_SNP2interaction_map) >> 20 # BitWise Operations: shift-right | x >> y :Returns x with the bits shifted to the right by y places.
@@ -260,22 +331,56 @@ count_assigned = 0
 count_multiple_assignments = 0
 count_null_false_positives = 0
 count_intrachromosomal_interactions = 0
+
+################## Dict for epistatic SNP-pairs counts ##################
 #epistatic_counts_dict = collections.defaultdict(lambda: collections.defaultdict(int)) # e.g. epistatic_counts_dict['MASTER_KEY']['EXPERIMENT_IDENTIFIER'] = INTEGER
 	# the expression inside the parenthesis must be a 'callable'. That is why I use a 'lambda function'
+epistatic_counts_dict_master_keys = ["count_all", "count_significant", "count_significant_pruned_EIID", "count_significant_pruned_hemani"] # *OBS* this is used for defining the order of the subplot histogram
 epistatic_counts_dict = dict() #collections.defaultdict(dict)
-epistatic_counts_dict['count_significant_pruned'] = collections.defaultdict(set) # *OBS*: set
-epistatic_counts_dict['count_significant'] = collections.defaultdict(int)
-epistatic_counts_dict['count_all'] = collections.defaultdict(int)
+epistatic_counts_dict["count_all"] = collections.defaultdict(int)
+epistatic_counts_dict["count_significant"] = collections.defaultdict(int)
+epistatic_counts_dict["count_significant_pruned_EIID"] = collections.defaultdict(set) # *OBS*: set()
+epistatic_counts_dict["count_significant_pruned_hemani"] = collections.defaultdict(int)
 	### MASTER KEYS IN DICT:
-	# count_significant_pruned
-	# count_significant
 	# count_all
+	# count_significant
+	# count_significant_pruned_EIID
+	# count_significant_pruned_hemani
 
-### Dict for distribution of significant probe counts
-probe_counts_dict = dict()
-probe_counts_dict['count_assigned_significant'] = collections.defaultdict(int)
-probe_counts_dict['count_assigned'] = collections.defaultdict(int)
-probe_counts_dict['count_all'] = collections.defaultdict(int)
+
+################## Dict for epistasis_table_*.txt ##################
+# EID = Experimental IDentifier. E.g. hic_1, null_1
+# EIID = Experimental Interaction IDentifier. E.g. hic_1_1923, null_1_119
+epistasis_table_dict = collections.defaultdict(list) # *OBS*: list
+	# D[EID].append(line)
+epistasis_table_pruned_EIID_dict = makehash() # "hash"/auto-vivification
+	# D[EID][EIID]['best_pvalue'] = pvalue
+	# D[EID][EIID]['best_line'] = line
+epistasis_table_pruned_hemani_dict = makehash() # "hash"/auto-vivification
+	# D[EID][illumina_probe_id][chr_pair]['best_pvalue'] = pvalue
+	# D[EID][illumina_probe_id][chr_pair]['best_line'] = line
+	# *OBS*: 
+		# chr_pair is formed by sorting chrA and chrB. Example: "2:10" or "10:19"
+		# this is IMPORTANT to represent a chromosme pair uniquely and unambiguously
+
+
+
+
+################## Dict for distribution of significant probe counts ##################
+# probe_counts_dict = dict()
+# probe_counts_dict['count_all'] = collections.defaultdict(int)
+# probe_counts_dict['count_assigned'] = collections.defaultdict(int)
+# probe_counts_dict['count_assigned_significant'] = collections.defaultdict(int)
+### DataFrame for distribution of significant probe counts
+df_probe_counts_master_keys = ["count_all", "count_assigned", "count_assigned_significant"]
+df_probe_counts = pd.DataFrame(columns=df_probe_counts_master_keys, index=probes_dict.keys()) # initialize data frame with NaNs.
+	# INDEX: illumina_probe_id, e.g. ILMN_2221
+	# COLUMNS: df_probe_counts_master_keys
+df_probe_counts = df_probe_counts.fillna(0) # fill the data with 0s rather than NaNs
+
+
+
+
 
 ### Count the number of lines in the file
 n_lines_fastepistasis_lm_combined = sum(1 for line in open(file_fastepistasis_lm_combined)) # this is pretty fast (only a bit slower than "wc -l"). 3.5 sec for a 1 GB file
@@ -298,9 +403,27 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 		# 11	rs1508531	11	rs4939298	-0.13990	33.32995	7.77755E-09	ILMN_1716816
 		line = line.strip() # strip() without argument will remove BOTH leading and trailing whitespace.
 		fields = line.split() 
-		chr_A, snp_A, chr_B, snp_B, pvalue, illumina_probe_id = fields[0], fields[1], fields[2], fields[3], float(fields[6]), fields[7]
+		chr_A, snp_A, chr_B, snp_B, pvalue, illumina_probe_id = fields[0], fields[1], fields[2], fields[3], fields[6], fields[7]
+
+		################## Defining/converting variables ##################
+		### Chromosome pair
+		try:
+			chr_A = int(chr_A)
+			chr_B = int(chr_B)
+		except ValueError as e:
+			print "ERROR: could not convert chr_A [{}] or chr_B [{}] to int.".format(chr_A, chr_B)
+			print "Exception: [{exception}]".format(exception=e)
+			print "Will re-raise exception..."
+			raise
+		
+		chr_pair = ":".join(map(str, sorted([chr_A, chr_B]))) # NUMERICALLY sorted, e.g. "9:21".
+			#^^ REMEMBER: .join() ONLY works on a list with string elements.
+
+		### pvalue
+		pvalue = float(pvalue)
 
 
+		################## SNP map and sets ##################
 		set_A = SNP2interaction_dict[snp_A] # TODO: put this into a try/except or use dict.get() for a default value
 		set_B = SNP2interaction_dict[snp_B]
 
@@ -314,7 +437,8 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 
 
 		### count_all
-		probe_counts_dict['count_all'][illumina_probe_id] += 1
+		#probe_counts_dict['count_all'][illumina_probe_id] += 1
+		df_probe_counts.ix[illumina_probe_id, "count_all"] += 1
 
 
 		### Mapping SNP-pairs to *UNASSIGNED* group
@@ -324,16 +448,19 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 			fh_unassigned.write(line + "\n")
 		else: # assigned state
 			### count_assigned 
-			probe_counts_dict['count_assigned'][illumina_probe_id] += 1
+			#probe_counts_dict['count_assigned'][illumina_probe_id] += 1
+			df_probe_counts.ix[illumina_probe_id, "count_assigned"] += 1
 
 			if pvalue <= bonferroni_correction_dict['hic_1']: # *OBS: hardcoded *experiment_identifier*!!!
 				# ^^ It makes sense to use the cut-off for hic_1 experiment as significant
 				### count_assigned_significant
-				probe_counts_dict['count_assigned_significant'][illumina_probe_id] += 1
+				#probe_counts_dict['count_assigned_significant'][illumina_probe_id] += 1
+				df_probe_counts.ix[illumina_probe_id, "count_assigned_significant"] += 1
+
 
 		##############################################################################
-		### Checking for *ASSINGED* INTRA chromosomal interactions
-		if (chr_A == chr_B) and (len(set_AB) > 0):
+		### Checking for *ASSIGNED* INTRA chromosomal interactions
+		if (chr_A == chr_B) and (len(set_AB) > 0): # len(set_AB) > 0: only considering assigned SNPs:
 			count_intrachromosomal_interactions += 1
 			with open(file_epistatic_intrachromosomal, 'a') as fh: # OBS: append mode!
 				fh.write( "{}\t{}\t{}\n".format(line, len(set_AB), ";".join(set_AB)) )
@@ -345,24 +472,41 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 			### assign to one group
 			count_assigned += 1
 
-
-
 			experiment_interaction_identifier = iter(set_AB).next() # GET first (AND ONLY) element in set. e.g. null_256_22233
+			#experiment_interaction_identifier = list(set_AB)[0]
 			tmp_parts_list = experiment_interaction_identifier.split('_')
 			experiment_identifier = tmp_parts_list[0] + "_" + tmp_parts_list[1] # e.g. null_256
 
 			if pvalue <= bonferroni_correction_dict[experiment_identifier]:
 				flag_significant = True
+				### Count dicts
 				epistatic_counts_dict['count_significant'][experiment_identifier] += 1
-				epistatic_counts_dict['count_significant_pruned'][experiment_identifier].add(experiment_interaction_identifier)
-
+				epistatic_counts_dict['count_significant_pruned_EIID'][experiment_identifier].add(experiment_interaction_identifier)
 			else:
 				flag_significant = False
 
 			epistatic_counts_dict['count_all'][experiment_identifier] += 1
 
-			#experiment_interaction_identifier = list(set_AB)[0]
-			experiment_identifier_fh_dict[experiment_identifier].write( "{}\t{}\t{}\n".format(line, experiment_interaction_identifier, flag_significant) )
+			### Line output
+			line_out = "{}\t{}\t{}".format(line, experiment_interaction_identifier, flag_significant)
+			experiment_identifier_fh_dict[experiment_identifier].write( line_out + "\n" )
+			
+			### Populating epistasis_table_dict* ##
+			if flag_significant:
+				### Epistasis table dicts - ONLY CONSIDERING SIGNIFICANT epistatic SNP-pairs ###
+				# epistasis_table_dict
+				epistasis_table_dict[experiment_identifier].append( line_out )
+				# epistasis_table_pruned_EIID_dict
+				if pvalue < epistasis_table_pruned_EIID_dict[experiment_identifier][experiment_interaction_identifier]['best_pvalue']:
+					# D[EID][EIID]['best_pvalue'] = pvalue
+					epistasis_table_pruned_EIID_dict[experiment_identifier][experiment_interaction_identifier]['best_pvalue'] = pvalue
+					epistasis_table_pruned_EIID_dict[experiment_identifier][experiment_interaction_identifier]['best_line'] = line_out
+				# epistasis_table_pruned_hemani_dict
+				if pvalue < epistasis_table_pruned_hemani_dict[experiment_identifier][illumina_probe_id][chr_pair]['best_pvalue']:
+					# D[EID][illumina_probe_id][chr_pair]['best_pvalue'] = pvalue
+					epistasis_table_pruned_hemani_dict[experiment_identifier][illumina_probe_id][chr_pair]['best_pvalue'] = pvalue
+					epistasis_table_pruned_hemani_dict[experiment_identifier][illumina_probe_id][chr_pair]['best_line'] = line_out
+
 			
 		elif len(set_AB)>1:
 			# "warn"
@@ -402,26 +546,113 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 				if pvalue <= bonferroni_correction_dict[experiment_identifier]:
 					flag_significant = True
 					epistatic_counts_dict['count_significant'][experiment_identifier] += 1
-					epistatic_counts_dict['count_significant_pruned'][experiment_identifier].add(experiment_interaction_identifier)
+					epistatic_counts_dict['count_significant_pruned_EIID'][experiment_identifier].add(experiment_interaction_identifier)
 				else:
 					flag_significant = False
 
 				epistatic_counts_dict['count_all'][experiment_identifier] += 1
 
-				experiment_identifier_fh_dict[experiment_identifier].write( "{}\t{}\t{}\n".format(line, experiment_interaction_identifier, flag_significant) )
+				### Line output ###
+				line_out = "{}\t{}\t{}".format(line, experiment_interaction_identifier, flag_significant)
+				experiment_identifier_fh_dict[experiment_identifier].write( line_out + "\n" )
 				
+				### Populating epistasis_table_dict* ##
+				if flag_significant:
+					### Epistasis table dicts - ONLY CONSIDERING SIGNIFICANT epistatic SNP-pairs ###
+					# epistasis_table_dict
+					epistasis_table_dict[experiment_identifier].append( line_out )
+					# epistasis_table_pruned_EIID_dict
+					if pvalue < epistasis_table_pruned_EIID_dict[experiment_identifier][experiment_interaction_identifier]['best_pvalue']:
+						# D[EID][EIID]['best_pvalue'] = pvalue
+						epistasis_table_pruned_EIID_dict[experiment_identifier][experiment_interaction_identifier]['best_pvalue'] = pvalue
+						epistasis_table_pruned_EIID_dict[experiment_identifier][experiment_interaction_identifier]['best_line'] = line_out
+					# epistasis_table_pruned_hemani_dict
+					if pvalue < epistasis_table_pruned_hemani_dict[experiment_identifier][illumina_probe_id][chr_pair]['best_pvalue']:
+						# D[EID][illumina_probe_id][chr_pair]['best_pvalue'] = pvalue
+						epistasis_table_pruned_hemani_dict[experiment_identifier][illumina_probe_id][chr_pair]['best_pvalue'] = pvalue
+						epistasis_table_pruned_hemani_dict[experiment_identifier][illumina_probe_id][chr_pair]['best_line'] = line_out
+
+
 			### increment count
 			count_multiple_assignments += 1
 
 			### multiple assignment file
 			fh_multiple_assignments.write(line + "\t" + ";".join(set_AB) + "\n")
 
+
 print "Done with main loop!"
 
+###################################### PROCESS and WRITE epistasis_table_* content ######################################
 
-###################################### Writing files ######################################
+################## POPULATE *epistatic_counts_dict* AND WRITE epistasis_table_* ##################
+# Populate dict with data from epistasis_table_*
 
-### epistatic_counts.txt # *OBS*: this file is similar to file_epistatic_counts_csv, except for the following:
+
+### epistasis_table_dict ###
+## epistasis_table_dict[EID] = LIST of "line_out"
+with open(file_epistasis_table, 'w') as fh:
+	for EID in sorted(epistasis_table_dict, key=function_sort_EID):
+		list_of_line_out = epistasis_table_dict[EID]
+		for line_out in list_of_line_out:
+			fh.write( line_out + "\n" )
+
+		
+
+### epistasis_table_pruned_EIID_dict ###
+## epistasis_table_pruned_EIID_dict[EID][EIID]['best_pvalue'] = pvalue
+with open(file_epistasis_table_pruned_EIID, 'w') as fh:
+	for EID in sorted(epistasis_table_pruned_EIID_dict, key=function_sort_EID):
+		EID_dict = epistasis_table_pruned_EIID_dict[EID]
+			# EID_dict.keys() is EIID
+			# EXAMPLE --> ['hic_1_2013', 'hic_1_2574']
+
+		### The below can be used for validation/extra check ###
+		##n_epistatic_counts = len(EID_dict[EID].keys()) # this is the number of EIID (experiment_interaction_identifier) that is significant for a given EID
+		##epistatic_counts_dict["count_significant_pruned_EIID__alternative_counting_method"][EID] = n_epistatic_counts # no need for incrementing ("+=")
+
+		for EIID in sorted(EID_dict, key=function_sort_EIID):
+			EIID_dict = EID_dict[EIID]
+				# EIID_dict.keys()
+				# EXAMPLE [*FIXED*] --> ['best_pvalue', 'best_line']
+			line_out = EIID_dict["best_line"]
+			fh.write( line_out + "\n" )
+
+
+### epistasis_table_pruned_hemani_dict ###
+## epistasis_table_pruned_hemani_dict[EID][illumina_probe_id][chr_pair]['best_pvalue'] = pvalue
+#for EID, EID_dict in epistasis_table_pruned_hemani_dict.items():
+with open(file_epistasis_table_pruned_hemani, 'w') as fh:
+	for EID in sorted(epistasis_table_pruned_hemani_dict, key=function_sort_EID):
+		EID_dict = epistasis_table_pruned_hemani_dict[EID]
+			# EID_dict.keys() is illumina_probe_id
+			# EXAMPLE --> ['ILMN_1684445', 'ILMN_1789639', 'ILMN_1701551', 'ILMN_1663793', 'ILMN_1814688', 'ILMN_1775441']
+		
+		# for illumina_probe_id, illumina_probe_id_dict in EID_dict.items():
+		for illumina_probe_id in EID_dict:
+			illumina_probe_id_dict = EID_dict[illumina_probe_id]
+				# illumina_probe_id_dict.keys() is chr_pair
+				# EXAMPLE --> ['4:14', '4:6']
+			n_chr_pair_epistatic_count = len(illumina_probe_id_dict.keys()) # this is the number of (unique) chromosome pairs with significant epistatic SNP-pairs
+			epistatic_counts_dict["count_significant_pruned_hemani"][EID] += n_chr_pair_epistatic_count # populating master key in epistatic_counts_dict
+			# ^OBS: we INCREMENT the count
+			
+			### DEBUGGGING ###
+			# if n_chr_pair_epistatic_count > 1:
+			# 	pdb.set_trace()
+			# from pprint import pprint
+			# illumina_probe_id_dict.keys()
+
+			for chr_pair in sorted(illumina_probe_id_dict, key=lambda x: x.split(":")[0]): #sorted on first chromosome. OBS: we are not using .items().
+				#POTENTIAL: you could also sort by best p-value for a given probe.
+				#pdb.set_trace()
+				line_out = illumina_probe_id_dict[chr_pair]["best_line"]
+				fh.write( line_out + "\n" )
+
+
+###################################### Writing MORE files ######################################
+
+################## epistatic_counts.txt ##################
+# *OBS*: this file is similar to file_epistatic_counts_csv, except for the following:
 # 1) file_epistatic_counts is not sorted
 # 2) file_epistatic_counts contains a column about bonferroni correction
 # 2) file_epistatic_counts has no header.
@@ -432,35 +663,36 @@ with open(file_epistatic_counts, 'w') as fh:
 		fh.write( "{}\t{}\t{}\t{}\t{}\n".format(experiment_identifier, 
 												epistatic_counts_dict['count_all'][experiment_identifier], 
 												epistatic_counts_dict['count_significant'][experiment_identifier], 
-												len(epistatic_counts_dict['count_significant_pruned'][experiment_identifier]), 
+												len(epistatic_counts_dict['count_significant_pruned_EIID'][experiment_identifier]), 
 												bonferroni_correction_dict[experiment_identifier]),
 												) # epistatic_counts_dict + epistatic_counts_dict['count_significant']
 		#fh.write( "{}\t{}\n".format(experiment_identifier, epistatic_counts_dict['count_all'][experiment_identifier]) ) # 
 
 
-###################################### CREATING DataFrame: Probe distribution ######################################
-
-## *FINISH ME*
-#df_probe_counts = pd.DataFrame(columns=epistatic_counts_dict.keys(), index=bonferroni_correction_dict.keys()) # initialize data frame with zeroes.
-#df_probe_counts = df_experiment_identifier_counts.fillna(0) # fill the data with 0s rather than NaNs
-
 ###################################### CREATING DataFrame: Calculating Empirical P-value ######################################
 
 #df_experiment_identifier_counts = pd.DataFrame()
-df_experiment_identifier_counts = pd.DataFrame(columns=epistatic_counts_dict.keys(), index=bonferroni_correction_dict.keys()) # initialize data frame with zeroes.
+df_experiment_identifier_counts = pd.DataFrame(columns=epistatic_counts_dict.keys(), index=bonferroni_correction_dict.keys()) # initialize data frame with NaNs.
 df_experiment_identifier_counts = df_experiment_identifier_counts.fillna(0) # fill the data with 0s rather than NaNs
 ### COLUMNS IN DATAFRAME: "keys of epistatic_counts_dict"
 	# count_all
 	# count_significant
-	# count_significant_pruned
+	# count_significant_pruned_EIID
 
 
 for key_master in epistatic_counts_dict:
 	for experiment_identifier in epistatic_counts_dict[key_master]:
 	#for experiment_identifier in bonferroni_correction_dict:
 		#df_experiment_identifier_counts[key_master][]
-		if key_master == 'count_significant_pruned':
-			df_experiment_identifier_counts.ix[experiment_identifier, key_master] = len(epistatic_counts_dict[key_master][experiment_identifier])
+		if key_master == 'count_significant_pruned_EIID':
+			n_epistatic_counts = len(epistatic_counts_dict[key_master][experiment_identifier]) # length of set()
+			### Validation: the two methods of counting should give the same
+			assert( n_epistatic_counts == len(epistasis_table_pruned_EIID_dict[experiment_identifier].keys()) )
+			#if not n_epistatic_counts == len(epistasis_table_pruned_EIID_dict[experiment_identifier].keys()):
+				#pdb.set_trace()
+			
+			### assignment to data frame
+			df_experiment_identifier_counts.ix[experiment_identifier, key_master] = n_epistatic_counts
 		else:
 			df_experiment_identifier_counts.ix[experiment_identifier, key_master] = epistatic_counts_dict[key_master][experiment_identifier]
 		#print key_master, experiment_identifier
@@ -468,22 +700,33 @@ for key_master in epistatic_counts_dict:
 
 ################## Creating P-value dict ##################
 ### About p-values: "obtaining a result EQUAL TO or MORE EXTREME than what was actually observed" --> p_val = sum(X >= X_OBS)
-p_value_dict = {} # KEYS will be: count_significant_pruned, count_significant, count_all
+p_value_dict = {} # KEYS will be: count_significant_pruned_EIID, count_significant, count_all
 for key_master in epistatic_counts_dict:
 	p_value_dict[key_master] = sum(df_experiment_identifier_counts.ix[:, key_master] >= df_experiment_identifier_counts.ix['hic_1', key_master])/float(len(df_experiment_identifier_counts))
 ### OLD:
-# p_value_count_significant_pruned = sum(df_experiment_identifier_counts.ix[:, 'count_significant_pruned'] >= df_experiment_identifier_counts.ix['hic_1', 'count_significant_pruned'])/float(len(df_experiment_identifier_counts))
+# p_value_count_significant_pruned = sum(df_experiment_identifier_counts.ix[:, 'count_significant_pruned_EIID'] >= df_experiment_identifier_counts.ix['hic_1', 'count_significant_pruned_EIID'])/float(len(df_experiment_identifier_counts))
 # p_value_count_significant = sum(df_experiment_identifier_counts.ix[:, 'count_significant'] >= df_experiment_identifier_counts.ix['hic_1', 'count_significant'])/float(len(df_experiment_identifier_counts))
 # p_value_count_all = sum(df_experiment_identifier_counts.ix[:, 'count_all'] >= df_experiment_identifier_counts.ix['hic_1', 'count_all'])/float(len(df_experiment_identifier_counts))
 
-################## Write csv to file ##################
+###################################### WRITE CSV TO FILE: df_experiment_identifier_counts ######################################
 ### Sorting, inplace
-df_experiment_identifier_counts.sort(['count_significant_pruned', 'count_significant'], ascending=False, inplace=True)
+#tmp_sort_order_list = ["count_significant_pruned_EIID", "count_significant"]
+tmp_sort_order_list = ["count_significant_pruned_hemani", "count_significant"]
+df_experiment_identifier_counts.sort(tmp_sort_order_list, ascending=False, inplace=True)
 ### Writing file
 df_experiment_identifier_counts.to_csv(file_epistatic_counts_csv) # sep='\t', index=True, header=True
 
-################## Write stats file ##################
 
+###################################### WRITE CSV TO FILE: df_probe_counts ######################################
+### Sorting, inplace
+tmp_sort_order_list = ["count_assigned_significant", "count_all", "count_assigned"]
+df_probe_counts.sort(tmp_sort_order_list, ascending=False, inplace=True)
+### Writing file
+df_probe_counts.to_csv(file_probe_counts_csv) # sep='\t', index=True, header=True
+
+
+
+################## Write stats file ##################
 with open(file_epistatic_stats, 'w') as fh:
 	fh.write( "count_unassigned: {}\n".format(count_unassigned) )
 	fh.write( "count_assigned: {} ({:.2f} % of total)\n".format(count_assigned, count_assigned/float(count_total)*100) )
@@ -491,14 +734,26 @@ with open(file_epistatic_stats, 'w') as fh:
 	fh.write( "count_null_false_positives: {}\n".format(count_null_false_positives) )
 	fh.write( "count_intrachromosomal_interactions: {} ({:.2f} % of total)\n".format(count_intrachromosomal_interactions, count_intrachromosomal_interactions/float(count_total)*100) )
 
-	fh.write( "HIC count_significant_pruned: {}\n".format(df_experiment_identifier_counts.ix['hic_1', 'count_significant_pruned']) )
-	fh.write( "HIC count_significant: {}\n".format(df_experiment_identifier_counts.ix['hic_1', 'count_significant']) )
+
+	### Probes
+	probe_stats_count_all = sum(df_probe_counts["count_all"] > 0) # --> could also use "(df_probe_counts["count_all"] > 0).sum()". Gives the same. TESTED.
+	probe_stats_count_assigned = sum(df_probe_counts["count_assigned"] > 0)
+	probe_stats_count_assigned_significant = sum(df_probe_counts["count_assigned_significant"] > 0)
+	fh.write( "PROBE count_all: {} ({:.2f} % of total number of probes in probes_dict)\n".format( probe_stats_count_all, probe_stats_count_all/float(n_probes)*100 ) )	
+	fh.write( "PROBE count_assigned: {} ({:.2f} % of total number of probes in probes_dict)\n".format( probe_stats_count_assigned, probe_stats_count_assigned/float(n_probes)*100 ) )	
+	fh.write( "PROBE count_assigned_significant: {} ({:.2f} % of total number of probes in probes_dict)\n".format( probe_stats_count_assigned_significant, probe_stats_count_assigned_significant/float(n_probes)*100 ) )	
+		
+
+	### Hi-C
 	fh.write( "HIC count_all: {}\n".format(df_experiment_identifier_counts.ix['hic_1', 'count_all']) )
+	fh.write( "HIC count_significant: {}\n".format(df_experiment_identifier_counts.ix['hic_1', 'count_significant']) )
+	fh.write( "HIC count_significant_pruned_EIID: {}\n".format(df_experiment_identifier_counts.ix['hic_1', 'count_significant_pruned_EIID']) )
+	fh.write( "HIC count_significant_pruned_hemani: {}\n".format(df_experiment_identifier_counts.ix['hic_1', 'count_significant_pruned_hemani']) )
 
-	fh.write( "p_value_dict[count_significant_pruned]: {}\n".format(p_value_dict['count_significant_pruned']) )
-	fh.write( "p_value_dict[count_significant]: {}\n".format(p_value_dict['count_significant']) )
 	fh.write( "p_value_dict[count_all]: {}\n".format(p_value_dict['count_all']) )
-
+	fh.write( "p_value_dict[count_significant]: {}\n".format(p_value_dict['count_significant']) )
+	fh.write( "p_value_dict[count_significant_pruned_EIID]: {}\n".format(p_value_dict['count_significant_pruned_EIID']) )
+	fh.write( "p_value_dict[count_significant_pruned_hemani]: {}\n".format(p_value_dict['count_significant_pruned_hemani']) )
 	### OLD
 	# fh.write( "p_value_count_significant_pruned: {}\n".format(p_value_count_significant_pruned) )
 	# fh.write( "p_value_count_significant: {}\n".format(p_value_count_significant) )
@@ -516,6 +771,7 @@ for fh in experiment_identifier_fh_dict.values():
 
 
 ###################################### Plotting ######################################
+
 
 ################## Histogram ##################
 print "will plot histogram now..."
@@ -552,10 +808,13 @@ for column_name, series in df_experiment_identifier_counts.iteritems(): # Iterat
 	plt.close() # or plt.close(fig)
 
 
-################## Subplot histogram ##################
+################## Subplot histogram - EPISTASIS ENRICHMENT ##################
+print "GENERATION PLOT: subplot EPISTASIS ENRICHMENT"
 subplot_n_row = len(df_experiment_identifier_counts.columns)
 print "subplot_n_row={}".format(subplot_n_row)
-for subplot_no, (column_name, series) in enumerate(df_experiment_identifier_counts.iteritems(), start=0): # Iterator over (column, series) pairs
+#for subplot_no, (column_name, series) in enumerate(df_experiment_identifier_counts.iteritems(), start=1): # Iterator over (column, series) pairs
+for subplot_no, column_name in enumerate(epistatic_counts_dict_master_keys, start=1): # *OBS: looping a in specific order*
+	series = df_experiment_identifier_counts[column_name]
 	print "PLOTTING SUBPLOT HISTOGRAM FOR COLUMN_NAME: {}".format(column_name)
 	print "subplot_no={}".format(subplot_no)
 
@@ -605,12 +864,72 @@ plt.tight_layout()
 ## http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.tight_layout
 ## http://matplotlib.org/faq/howto_faq.html#move-the-edge-of-an-axes-to-make-room-for-tick-labels
 
-fig_filename = "{base}/fig_{plot}.{ext}".format(base=path_main_out, plot="subplot", ext="pdf")
+fig_filename = "{base}/fig_{plot}.{ext}".format(base=path_main_out, plot="subplot_Hi-C_epistasis_enrichment", ext="pdf")
 ### saving fig
 plt.savefig(fig_filename)
 plt.close() # or plt.close(fig)
 
 
+################## Subplot histogram - PROBES ##################
+print "GENERATION PLOT: subplot PROBES"
+subplot_n_row = len(df_probe_counts.columns)
+print "subplot_n_row={}".format(subplot_n_row)
+for flag_logscale in [True, False]:
+	print "flag_logscale: {}".format(flag_logscale)
+	#for subplot_no, (column_name, series) in enumerate(df_probe_counts.iteritems(), start=1): # Iterator over (column, series) pairs
+	for subplot_no, column_name in enumerate(df_probe_counts_master_keys, start=1): # *OBS: looping a in specific order*
+		series = df_probe_counts[column_name]
+		print "PLOTTING SUBPLOT HISTOGRAM FOR COLUMN_NAME: {}".format(column_name)
+		print "subplot_no={}".format(subplot_no)
+
+		x = series
+		ax = plt.subplot(subplot_n_row, 1, subplot_no) # .subplot(nrow, ncol, plot_idx)
+		_ = plt.hist(x, bins=500) # 100 looks ok # ---> The return value is a tuple (n, bins, patches) 
+
+		### Adding VERTICAL LINE
+		xv1 = x.mean()
+		x_min = x.min()
+		x_max = x.max()
+		plt.axvline(xv1, color='blue', linestyle='dashed', linewidth=2)
+
+
+
+		### About log-scale plots ###
+		#REF: http://stackoverflow.com/a/17952890
+		#http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.yscale
+		#The issue is with the bottom of bars being at y=0 and the default
+		#is to mask out in-valid points (log(0) -> undefined) when doing
+		#the log transformation (there was discussion of changing this,
+		#but I don't remember which way it went) so when it tries to draw
+		#the rectangles for you bar plot, the bottom edge is masked out ->
+		#no rectangles.
+		# ax.set_ylim(1, SOMETING)
+		
+		# nonposx/nonposy: ['mask' | 'clip' ]: non-positive values in x or y can be masked as invalid, or clipped to a very small positive number
+
+		if flag_logscale:
+			plt.yscale('log', basey=10) # what is the default --> log10.
+			#plt.yscale('log', nonposy='clip')
+
+		### Adding p-value text
+		textstr = "mean={mean:.3f}\nmax={max:.1f}\nmin={min:.1f}".format(mean=xv1, max=x_max, min=x_min)
+		props = dict(boxstyle='round', facecolor='wheat', alpha=0.5) # # these are matplotlib.patch.Patch properties
+		# place a text box in upper left in axes coords
+		plt.text(0.95, 0.95, textstr, transform=ax.transAxes, fontsize=14, verticalalignment='top', horizontalalignment='right', bbox=props) # transform=ax.transAxes
+
+		### Adding axis labels and title
+		plt.xlabel(column_name)
+		plt.ylabel('Counts')
+		plt.title(column_name, fontsize=18)
+
+	plt.tight_layout()
+	fig_filename = "{base}/fig_{plot}.{ext}".format(base=path_main_out, plot="subplot_probes_distribution_ylogscale-{}".format(flag_logscale), ext="pdf")
+	### saving fig
+	plt.savefig(fig_filename)
+	plt.close() # or plt.close(fig)
+
+
+###################################### Finishing ######################################
 print "The script is complete!"
 
 ###################################### GARBAGE ######################################
