@@ -41,11 +41,11 @@ str(df.fastEpi)
 nrow(df.fastEpi)
 
 ### UNIQUE SNPs and probes
-SNP_A.unique <- unique(df.fastEpi$SNP_A); length(SNP_A.unique) # --> 6512
-SNP_B.unique <- unique(df.fastEpi$SNP_B); length(SNP_B.unique) # --> 6501
-SNP_AB.intersect <- intersect(SNP_A.unique, SNP_B.unique); length(SNP_AB.intersect) # --> 54
-SNP_AB.union <- union(SNP_A.unique, SNP_B.unique); length(SNP_AB.union) # --> 12959
-probes.unique <- unique(df.fastEpi$PHENOTYPE); length(probes.unique) # --> 1127
+SNP_A.unique <- unique(df.fastEpi$SNP_A); length(SNP_A.unique) # --> 6512 | new=2083
+SNP_B.unique <- unique(df.fastEpi$SNP_B); length(SNP_B.unique) # --> 6501 | new=2026
+SNP_AB.intersect <- intersect(SNP_A.unique, SNP_B.unique); length(SNP_AB.intersect) # --> 54 | new=10
+SNP_AB.union <- union(SNP_A.unique, SNP_B.unique); length(SNP_AB.union) # --> 12959 | new=4090
+probes.unique <- unique(df.fastEpi$PHENOTYPE); length(probes.unique) # --> 1127 | new=1224
 # extract UNION snps
 #cat(SNP_AB.union, sep="\n", file=paste0(dirname(file.fastEpi_table),"/SNP_AB.union.txt"))
 
@@ -86,6 +86,7 @@ sum(duplicated(df.fastEpi.sorted_rsID)) #  all duplicated
 idx.duplicated <- duplicated(df.fastEpi.sorted_rsID[,c("SNP_A", "SNP_B", "PHENOTYPE")]) | duplicated(df.fastEpi.sorted_rsID[,c("SNP_A", "SNP_B", "PHENOTYPE")], fromLast=T)
 df.fastEpi.sorted_rsID.dup <- df.fastEpi.sorted_rsID[idx.duplicated, ]
 df.fastEpi.sorted_rsID.dup <- df.fastEpi.sorted_rsID.dup[with(df.fastEpi.sorted_rsID.dup, order(SNP_A, SNP_B)),]
+
 ### write csv
 file.duplicated <- paste0(dirname(file.fastEpi_table), "/", "duplicated_SNP-probe_pairs.csv")
 file.duplicated
@@ -144,28 +145,30 @@ df.fastEpi$CHR <= df.fastEpi$CHR.1
 
 
 
-#################################### GARBAGE ####################################
 
-mat <- matrix(1:16, ncol=4)
-mat
-length(mat)
 
-########### THIS WORKED - Extracting elements ##############
-mat <- as.matrix(df.fastEpi.sorted_rsID[1:10, c("SNP_A", "SNP_B")])
-mat
-idx <- cbind(1:10, x.rsID.order[1:10,1])
-idx
-mat[idx]
-
-SNP_A <- df.fastEpi.sorted_rsID[1:10, c("SNP_A", "SNP_B")][cbind(seq_along(x.rsID.order[1:10,1]), x.rsID.order[1:10,1])]
-SNP_A
-
-########### FAIL SORTING ATTEMPTS ##############
-### fail attempt using apply()
-apply(as.matrix(df.fastEpi.sorted_rsID[1:10, c("SNP_A", "SNP_B")]), 1, '[', x.rsID.order[1:10,1])
-
-SNP_A <- df.fastEpi.sorted_rsID[1:10, c("SNP_A", "SNP_B")][[x.rsID.order[1:10,1]]]
-SNP_A
-df.fastEpi.sorted_rsID[1, c("SNP_A", "SNP_B")]
-df.fastEpi.sorted_rsID[1, c("SNP_A", "SNP_B")][cbind(1,2)]
-
+# #################################### GARBAGE ####################################
+# 
+# mat <- matrix(1:16, ncol=4)
+# mat
+# length(mat)
+# 
+# ########### THIS WORKED - Extracting elements ##############
+# mat <- as.matrix(df.fastEpi.sorted_rsID[1:10, c("SNP_A", "SNP_B")])
+# mat
+# idx <- cbind(1:10, x.rsID.order[1:10,1])
+# idx
+# mat[idx]
+# 
+# SNP_A <- df.fastEpi.sorted_rsID[1:10, c("SNP_A", "SNP_B")][cbind(seq_along(x.rsID.order[1:10,1]), x.rsID.order[1:10,1])]
+# SNP_A
+# 
+# ########### FAIL SORTING ATTEMPTS ##############
+# ### fail attempt using apply()
+# apply(as.matrix(df.fastEpi.sorted_rsID[1:10, c("SNP_A", "SNP_B")]), 1, '[', x.rsID.order[1:10,1])
+# 
+# SNP_A <- df.fastEpi.sorted_rsID[1:10, c("SNP_A", "SNP_B")][[x.rsID.order[1:10,1]]]
+# SNP_A
+# df.fastEpi.sorted_rsID[1, c("SNP_A", "SNP_B")]
+# df.fastEpi.sorted_rsID[1, c("SNP_A", "SNP_B")][cbind(1,2)]
+# 

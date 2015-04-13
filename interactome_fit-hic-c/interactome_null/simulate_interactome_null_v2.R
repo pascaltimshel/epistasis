@@ -17,8 +17,8 @@ rm(list=ls())
 ###################################### Broad/OSX switch ########################################
 ################################################################################################
 
-os.execution <- "broad"
-#os.execution <- "osx"
+#os.execution <- "broad"
+os.execution <- "osx"
 
 # Broad NOTES
 # reuse R-3.1
@@ -33,6 +33,8 @@ if (os.execution == "osx") {
   path.interaction_tables <- path.expand("~/p_HiC/Ferhat_Ay_2014/interaction_tables/tables_v1")
   path.out.diagnostics.base = path.expand("~/p_HiC/Ferhat_Ay_2014/interaction_tables/null_v2")
   path.out.export = path.expand("~/p_HiC/Ferhat_Ay_2014/interaction_tables/null_v2")
+  #path.out.diagnostics.base = path.expand("~/p_HiC/Ferhat_Ay_2014/interaction_tables/null_v2_small")
+  #path.out.export = path.expand("~/p_HiC/Ferhat_Ay_2014/interaction_tables/null_v2_small")
   
 } else if (os.execution == "broad") {
   options(echo=TRUE)
@@ -60,11 +62,12 @@ source(file="function_generate_null_utils_v2.R")
 
 ###################### Read interaction table ####################
 n_perm <- 1000
-hic_cell_type <- "hESC" # "hESC" OR "hIMR90"
-#hic_cell_type <- "hIMR90" # "hESC" OR "hIMR90"
+#n_perm <- 100
+#hic_cell_type <- "hESC" # "hESC" OR "hIMR90"
+hic_cell_type <- "hIMR90" # "hESC" OR "hIMR90"
 
 ### hIMR90
-# 1e-06 [26 k interactions] --> ??
+# 1e-06 [26 k interactions] --> 70 min
 # 1e-07 --> 5 min
 # 1e-08 --> 1.2 min
 # 1e-09
@@ -77,10 +80,11 @@ hic_cell_type <- "hESC" # "hESC" OR "hIMR90"
 
 list.timing.loop <- list()
 
-for (p.q.threshold in c(1e-12,1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
+#for (p.q.threshold in c(1e-12,1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
 #for (p.q.threshold in c(1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
 #for (p.q.threshold in c(1e-17,1e-18)) {
 #for (p.q.threshold in c(1e-06, 1e-07, 1e-08, 1e-09, 1e-10)) { # IMR90
+for (p.q.threshold in c(1e-08, 1e-09, 1e-10)) { # IMR90
   time_start <- proc.time()
   
   #str.path <- "/Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/tables_v1/interation_table.fit-hi-c.nosex.interchromosomal.%s.q_%s.txt" # e.g. interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-07.txt

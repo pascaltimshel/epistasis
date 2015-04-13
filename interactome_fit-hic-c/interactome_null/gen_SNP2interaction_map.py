@@ -46,6 +46,15 @@ import pdb
 #python gen_SNP2interaction_map.py ....
 	# at null_192_1017 --> Segmentation fault: 11 (likely because it was using 6 GB memory)
 
+################## OSX - VARY n_perm ##################
+### n_perm=10000 | hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
+#python gen_SNP2interaction_map.py --path_interaction_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_snpsets/maf_5_sets/hIMR90_width_500_maf_5_q_1e-08 --file_null_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/null_v2_varying_n_perm/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-08.nperm_10000.txt --q_threshold 1e-08 --path_main_out /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8-vary_n_perm
+### n_perm=100 | hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
+#python gen_SNP2interaction_map.py --path_interaction_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_snpsets/maf_5_sets/hIMR90_width_500_maf_5_q_1e-08 --file_null_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/null_v2_varying_n_perm/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-08.nperm_100.txt --q_threshold 1e-08 --path_main_out /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8-vary_n_perm
+### n_perm=10 | hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8
+#python gen_SNP2interaction_map.py --path_interaction_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_snpsets/maf_5_sets/hIMR90_width_500_maf_5_q_1e-08 --file_null_table /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/null_v2_varying_n_perm/null_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-08.nperm_10.txt --q_threshold 1e-08 --path_main_out /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8-vary_n_perm
+
+
 
 ################## Broad ##################
 
