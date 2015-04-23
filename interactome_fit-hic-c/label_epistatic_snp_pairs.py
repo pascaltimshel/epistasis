@@ -44,21 +44,24 @@ def get_blacklisted_snps():
 	
 	"""
 
-	blacklisted_snps_set = set(["rs4935071",
+	blacklisted_snps_set = set([
+						"rs4935071",
 						"rs1072594",
-						"rs2523608",
 						"rs206146",
 						"rs7383287",
 						"rs2581",
 						"rs9460309",
 						"rs241448",
-						"rs2071554",
+						"rs2523608",
 						"rs11244",
 						"rs2289150",
 						"rs2070121",
 						"rs1042337",
 						"rs2249255",
-						"rs241447"]) # len() --> 15
+						"rs241447"
+						]) # len() --> 15
+
+
 
 	return blacklisted_snps_set
 
@@ -382,6 +385,7 @@ count_intrachromosomal_interactions = 0
 
 ### Counters/dict
 counter_snp_not_in_SNP2interaction = collections.Counter()
+counter_snp_blacklisted = collections.Counter()
 
 ################## Dict for epistatic SNP-pairs counts ##################
 #epistatic_counts_dict = collections.defaultdict(lambda: collections.defaultdict(int)) # e.g. epistatic_counts_dict['MASTER_KEY']['EXPERIMENT_IDENTIFIER'] = INTEGER
@@ -457,15 +461,6 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 		fields = line.split() 
 		chr_A, snp_A, chr_B, snp_B, pvalue, illumina_probe_id = fields[0], fields[1], fields[2], fields[3], fields[6], fields[7]
 
-		################## EXCLUDING SNPs ##################
-		# Pascal detected 04/22/2015 that the .bim file contained DUPLICATED SNPs.
-		# This gives problems downstream analysis (e.g. R snpStats).
-		# Here we exclude a list of "black_listed_rsID"
-		### ***Write something HERE! ***
-		# 1) defined "black_listed_rsID" in the top of the program
-		# 2) check if snp_A or snp_B is in the list
-			# 2a) if yes, exclude it/them
-
 
 		################## Defining/converting variables ##################
 		### Chromosome pair
@@ -485,7 +480,29 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 		pvalue = float(pvalue)
 
 
+		################## *EXCLUDING SNPs* ##################
+		# Pascal detected 04/22/2015 that the .bim file [Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.maf5.bim] contained DUPLICATED SNPs.
+		# This gives problems downstream analysis (e.g. R snpStats). Rownames etc.
+		# Here we exclude a list of "black_listed_rsID"
+		### ***Write something HERE! ***
+		# 2) check if snp_A or snp_B is in the list
+			# 2a) if yes, exclude it/them
+		flag_blacklisted = False
+		if snp_A in blacklisted_snps_set: 
+			counter_snp_blacklisted[snp_A] += 1
+			flag_blacklisted = True
+		elif snp_B in blacklisted_snps_set:
+			counter_snp_blacklisted[snp_B] += 1
+			flag_blacklisted = True
+
+		if flag_blacklisted: # we continue loop if the flag is raised.
+			continue
+
 		################## SNP map and sets ##################
+		### NOTE
+		# We use "try/except" to catch exception occurring if a SNP is not in the SNP2interaction_dict.
+		# This could happen if we for some reason have QC'ed the genotypes *AFTER* running FastEpistasis (.bim --> set files + XXX/stats/df_interaction_table_snps.txt --> SNP2interaction_dict).
+		# We avoid errors by setting the set_A/B to an empty set. In this way, we EFFECTIVELY IGNORE SNPs present in the epistasis concatenated epistasis results.
 		try:
 			set_A = SNP2interaction_dict[snp_A] # TODO: put this into a try/except or use dict.get() for a default value
 		except KeyError as e:
@@ -802,11 +819,16 @@ df_probe_counts.to_csv(file_probe_counts_csv) # sep='\t', index=True, header=Tru
 
 ################## Write ##################
 with open(file_epistatic_stats, 'w') as fh:
+	### Counts
 	fh.write( "count_unassigned: {}\n".format(count_unassigned) )
 	fh.write( "count_assigned: {} ({:.2f} % of total)\n".format(count_assigned, count_assigned/float(count_total)*100) )
 	fh.write( "count_multiple_assignments: {} ({:.2f} % of count_assigned)\n".format(count_multiple_assignments, count_multiple_assignments/float(count_assigned)*100) )
 	fh.write( "count_null_false_positives: {}\n".format(count_null_false_positives) )
 	fh.write( "count_intrachromosomal_interactions: {} ({:.2f} % of total)\n".format(count_intrachromosomal_interactions, count_intrachromosomal_interactions/float(count_total)*100) )
+
+	### Counters
+	fh.write( "counter_snp_blacklisted: [{}]\n".format(counter_snp_blacklisted) )
+	fh.write( "sum(counter_snp_blacklisted.values()): {}\n".format(sum(counter_snp_blacklisted.values())) )
 
 	fh.write( "counter_snp_not_in_SNP2interaction: [{}]\n".format(counter_snp_not_in_SNP2interaction) )
 	fh.write( "sum(counter_snp_not_in_SNP2interaction.values()): {}\n".format(sum(counter_snp_not_in_SNP2interaction.values())) )

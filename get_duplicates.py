@@ -26,6 +26,13 @@ import datetime
 ### OSX
 #python get_duplicates.py --input /Users/pascaltimshel/Dropbox/5_Data/EGCUT_DATA/geno/all_clean/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.bim
 
+
+### PLINK CALL ###
+# BROAD [which plink2 --> /cvar/jhlab/timshel/bin/plink1.9_linux_x86_64/plink]
+# cd  /cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/
+# plink2 --bfile Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.maf5 --exclude Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.maf5.duplicates_unique_rsID.txt --make-bed --out Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.maf5.duprm
+
+
 ###################################### SCRIPT ######################################
 
 def get_duplicates(inputfile, outputfile, appendfile):

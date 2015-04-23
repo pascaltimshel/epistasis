@@ -62,16 +62,19 @@ interaction_width = int(args.width)
 
 ##############################################################################################
 ### *IMPORTANT*: setting the specificiers for the data set. THIS IS USED IN path_base_out *###
-#hic_data_set = "hIMR90"
 #hic_data_set = "hESC"
-hic_data_set = "lan-et-al_K562"
+#hic_data_set = "hIMR90"
+#hic_data_set = "lan-et-al_K562"
+#hic_data_set = "hESC-contactCount_1"
+hic_data_set = "hIMR90-contactCount_1"
 
 maf_param = "5" # this is only used for naming the "path_base_out"
 
 ### Setting threshold
 #list_of_q_threshold = ["1e-06", "1e-07", "1e-08", "1e-09", "1e-10"] # hIMR90
 #list_of_q_threshold = ["1e-12", "1e-13", "1e-14", "1e-15", "1e-16", "1e-17", "1e-18"] # hESC
-list_of_q_threshold = ["OUTLIER_RM"] # lan-et-al_K562
+#list_of_q_threshold = ["OUTLIER_RM"] # lan-et-al_K562
+list_of_q_threshold = ["1"] # contactCount_1
 
 
 for q_threshold in list_of_q_threshold:
@@ -89,7 +92,8 @@ for q_threshold in list_of_q_threshold:
 	### Broad
 	#file_bim = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.bim" # REMEMBER: use the CLEAN FILE later!
 	#file_bim = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.bim" 
-	file_bim = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.maf5.bim" 
+	#file_bim = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.maf5.bim" 
+	file_bim = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.maf5.duprm.bim" 
 
 	## wc 12/09/2014
 	#  2009553 = Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.bim

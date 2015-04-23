@@ -200,10 +200,10 @@ def LogArguments():
 test() # test that things are ok
 
 ###################################### Global params ######################################
-queue_name = "week" # --> REL max_jobs_per_user=200 | CentOS max_jobs_per_user=300
+#queue_name = "week" # --> REL max_jobs_per_user=200 | CentOS max_jobs_per_user=300
 #queue_name = "hour" # --> REL max_jobs_per_user=400 | CentOS max_jobs_per_user=500
 #queue_name = "priority" # --> 10
-#queue_name = "MEDPOP" # --> max_jobs_per_user=NA
+queue_name = "MEDPOP" # --> max_jobs_per_user=NA
 # priority: This queue has a per-user limit of 10 running jobs, and a run time limit of three days.
 mem="5" # gb      
 proc=20 # number of CPUs
@@ -221,8 +221,8 @@ args = ParseArguments()
 
 ###################################### Paramters ######################################
 # ***OBS: this is the NUMBER of interactions to run per job.
-n_jobs_per_bsub = 200 #500 # 60 # --> RHEL WEEK
-#n_jobs_per_bsub = 3 #500 # 60 # --> RHEL WEEK
+#n_jobs_per_bsub = 200 #500 # 60 # --> RHEL WEEK
+n_jobs_per_bsub = 20 #500 # 60 # --> RHEL WEEK
 #n_jobs_per_bsub = 25 # *NEW*
 #n_jobs_per_bsub = 4 #25 # 100 # --> RHEL HOUR
 #n_jobs_per_bsub = 100 # --> RHEL HOUR v. 2
@@ -243,12 +243,15 @@ maf = "5"
 #interaction_width = "10000"
 #interaction_width = "2500" # --> RHEL week - LASTEST hIMR90
 #interaction_width = "2500" # --> RHEL week - LASTEST hESC
-#interaction_width = "1000" # --> RHEL week
-interaction_width = "5000" # --> RHEL week
+#interaction_width = "5000" # --> RHEL week
+interaction_width = "1000" # --> RHEL week | contactCount_1
 
-#hic_dataset = "hIMR90"
 #hic_dataset = "hESC"
-hic_dataset = "lan-et-al_K562"
+#hic_dataset = "hIMR90"
+#hic_dataset = "lan-et-al_K562"
+hic_dataset = "hESC-contactCount_1"
+#hic_dataset = "hIMR90-contactCount_1"
+
 
 #q_threshold = "1e-09" # --> RHEL hour
 #q_threshold = "1e-08" # --> CentOS hour
@@ -259,13 +262,15 @@ hic_dataset = "lan-et-al_K562"
 #q_threshold = "1e-13" # --> RHEL week - LASTEST hESC
 #q_threshold = "1e-14" # --> RHEL week - LASTEST hESC
 
-q_threshold = "OUTLIER_RM" # --> lan_et_al
+#q_threshold = "OUTLIER_RM" # --> lan_et_al
+q_threshold = "1" # --> contactCount_1
 
 
 
 ### Input BIM file: *UPS: keep this in sync!* ###
 #bfile = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean" # DO NOT ADD EXTENSION to file
-file_bim = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.maf5" # DO NOT ADD EXTENSION to file
+#file_bim = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.maf5" # DO NOT ADD EXTENSION to file
+file_bim = "/cvar/jhlab/timshel/egcut/GTypes_hapmap2_expr/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.maf5.duprm" # DO NOT ADD EXTENSION to file
 
 path_files = "/cvar/jhlab/timshel/egcut/ETypes_probes_norm_peer/phenofile_log2_k50.top50_mean_top50_var_refseq"
 #file_set = "/cvar/jhlab/timshel/egcut/interactome_fit-hi-c/maf_5_sets/10000_snppool_hIMR90_q_1e-07/snp_sets/set_AB.txt"
