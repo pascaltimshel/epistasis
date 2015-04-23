@@ -23,7 +23,11 @@
 # Finaly, a grid is wrapped around it
 ############################################
 
-plot_EpiModel <- function(idx, df.input, add_data_heatmap=FALSE, save_images=TRUE, save_significant_treshold=1) {
+plot_EpiModel <- function(idx, df.input, path.out="./", add_data_heatmap=FALSE, save_images=TRUE, save_significant_treshold=1) {
+  ### Defaults
+  # path.out --> current working directory.
+  
+  
   #plots <- list()
   
   ### FOR DEBUGGING ##
@@ -138,10 +142,9 @@ plot_EpiModel <- function(idx, df.input, add_data_heatmap=FALSE, save_images=TRU
     
     if (save_images & (inttest_multiplicative_pval <= save_significant_treshold)) {
       print("saving plot")
-      #folder_name <- "plot_epistasis_model_hemani_SNPs_XXX/" # OBS: remember trailing backslash "/"
-      folder_name <- "./" # OBS: remember trailing backslash "/"
+      #folder_name <- "./" # OBS: remember trailing backslash "/"
       file_name <- sprintf("%d_%s|%s-%s.pdf", i, name.probe, name.snp1, name.snp2) # CONSIDER USING .SVG FORMAT
-      file_name <- paste(folder_name, file_name, sep="")
+      file_name <- paste(path.out, file_name, sep="")
       
       ### Save using print()
       pdf(file_name, width=10, height=6)

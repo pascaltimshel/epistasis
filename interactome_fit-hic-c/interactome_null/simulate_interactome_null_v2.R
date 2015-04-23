@@ -60,11 +60,14 @@ source(file="function_generate_null_utils_v2.R")
 ##################################################
 
 
-###################### Read interaction table ####################
+###################### Set params ####################
 n_perm <- 1000
 #n_perm <- 100
-#hic_cell_type <- "hESC" # "hESC" OR "hIMR90"
-hic_cell_type <- "hIMR90" # "hESC" OR "hIMR90"
+
+######### Set cell type | this is only used for the OUTPUT filename #########
+#hic_cell_type <- "hESC" # q_lt_0.001.inter | "hESC" "hIMR90"
+#hic_cell_type <- "hESC-contactCount_1" # contactCount_1
+hic_cell_type <- "hIMR90-contactCount_1" # contactCount_1
 
 ### hIMR90
 # 1e-06 [26 k interactions] --> 70 min
@@ -78,13 +81,18 @@ hic_cell_type <- "hIMR90" # "hESC" OR "hIMR90"
 # 1e-13 [~25 k interactions] --> 56 min
 # 1e-14 --> 10 min
 
+### contactCount_1
+# hESC head_5001 [5k interaction] --> 13 min
+# hIMR90 head_5001 [5k interaction] --> 6 min
+
 list.timing.loop <- list()
 
 #for (p.q.threshold in c(1e-12,1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
 #for (p.q.threshold in c(1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
 #for (p.q.threshold in c(1e-17,1e-18)) {
 #for (p.q.threshold in c(1e-06, 1e-07, 1e-08, 1e-09, 1e-10)) { # IMR90
-for (p.q.threshold in c(1e-08, 1e-09, 1e-10)) { # IMR90
+#for (p.q.threshold in c(1e-08, 1e-09, 1e-10)) { # IMR90
+for (p.q.threshold in c(1)) { # contactCount_1 | make sure that the given "q.threshold" exists
   time_start <- proc.time()
   
   #str.path <- "/Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/interaction_tables/tables_v1/interation_table.fit-hi-c.nosex.interchromosomal.%s.q_%s.txt" # e.g. interation_table.fit-hi-c.nosex.interchromosomal.hIMR90.q_1e-07.txt
