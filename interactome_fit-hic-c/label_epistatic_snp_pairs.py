@@ -235,7 +235,7 @@ path_main_input = os.path.abspath(args.path_main_input)
 ################## Set output filenames ##################
 path_main_out = path_main_input + "/assigned" # dir # hic_hypothesis_testing
 path_out_epistatic_results = path_main_out + "/epistatic_results" # dir
-extension_epistatic_results = "lm.combined.txt" # file extension name
+extension_epistatic_results = "lm.combined.txt" # file extension name | e.g. XXX/fastEpi_compiled/assigned/epistatic_results/null_996.lm.combined.txt
 
 ### Epistasis: epistasis tables
 file_epistasis_table = path_main_out + "/epistasis_table.txt"

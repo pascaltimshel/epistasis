@@ -18,8 +18,12 @@
 # 3) Make system call to Plink2 with the --make-bed option.
 ############################################
 
+################## DEPENDENCIES ################
+library(tools)
 
+################## FUNCTION(S) ################
 write_snp_subset_plink_file <- function(df, path.out) {
+  
   SNP_A <- df$snp1
   SNP_B <- df$snp2
   
@@ -27,9 +31,14 @@ write_snp_subset_plink_file <- function(df, path.out) {
   file.out.union <- paste0(path.out,"/SNP_AB.union.txt")
   file.out.plink_prefix <-paste0(path.out,"/egcut_snpsubset")
   
-  exec.plink2 <- "/Users/pascaltimshel/p_bioinformatic_tools/plink_1.9_mac_25_Nov_2014/plink"
-  bed.file <- "/Users/pascaltimshel/Dropbox/5_Data/EGCUT_DATA/geno/all_clean/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean" # NO EXTENSION (no .bed)
-
+  exec.plink2 <- path.expand("~/p_bioinformatic_tools/plink_1.9_mac_25_Nov_2014/plink")
+  #bed.file <- "/Users/pascaltimshel/Dropbox/5_Data/EGCUT_DATA/geno/all_clean/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean" # NO EXTENSION (no .bed)
+  bed.file <- path.expand("~/Dropbox/5_Data/EGCUT_DATA/geno/maf5_clean_duprm/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.maf5.duprm") # NO EXTENSION (no .bed)
+             
+  ### Check if plink files already exists - warn if it does
+  if ( file.exists(paste0(file.out.plink_prefix,".bed")) ) { # or use Sys.glob(paste0(file.out.plink_prefix,"*"))[0]
+    print("OBS: PLINK files [file.out.plink_prefix] exists")
+  }
   
   ### UNIQUE SNPs and probes
   SNP_A.unique <- unique(SNP_A)
