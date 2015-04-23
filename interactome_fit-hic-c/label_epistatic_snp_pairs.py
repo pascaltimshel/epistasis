@@ -167,6 +167,20 @@ def function_sort_EIID(EIID):
 # null_100        4541756
 ### FORMAT: two column, tab seperated. [BTW: the file is alphabetically sorted by the first column]
 
+###################################### Batch job vs interactive ######################################
+### QUESTION: "find out if running in shell or not (e.g. sun grid engine queue)"
+# SOURCE #1: http://stackoverflow.com/questions/967369/python-find-out-if-running-in-shell-or-not-e-g-sun-grid-engine-queue
+# SOURCE #2: http://stackoverflow.com/questions/1077113/how-do-i-detect-whether-sys-stdout-is-attached-to-terminal-or-not
+if sys.stdout.isatty():
+    print("Script is running in 'Interactive' mode, i.e. from a shell/terminal")
+    flag_mode_interactive = True
+else:
+    print("Script is running in 'Non-interactive' mode, i.e. from batch queueing system")
+    flag_mode_interactive = False
+
+### Code dependent on the interactive mode ###
+# 1) IN 'Interactive' mode: the prompt is enabled if "path_main_out" exists.
+
 
 ###################################### PARAMETERs ###################################### 
 arg_parser = argparse.ArgumentParser()
@@ -238,11 +252,13 @@ if not os.path.exists(file_SNP2interaction_map):
 
 ###################################### OUTPUT ######################################
 if os.path.exists(path_main_out):
-	print "path_main_out={} exists".format(path_main_out)
-	ans = ""
-	while ans != "yes":
-		ans = raw_input("Do you want overwrite the content (type 'yes' to continue)? ")
-	print # add extra newline
+	print "WARNING: path_main_out={} exists".format(path_main_out)
+	
+	if flag_mode_interactive: # only ask for user input if the script is running from command line
+		ans = ""
+		while ans != "yes":
+			ans = raw_input("Do you want overwrite the content (type 'yes' to continue)? ")
+		print # add extra newline
 
 ################## *Make OUTPUT dirs* ##################
 for path in [path_main_out, path_out_epistatic_results]:
@@ -395,7 +411,7 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 		time_elapsed_loop = time.time() - time_start_loop # <type 'float'>
 		if line_no % 5000 == 0: 
 			print "Main loop | #{line_no}/#{n_lines} | {pct_complete:.2f} % done | {sec:.2f} sec [{min:.2f} min]".format(line_no=line_no, n_lines=n_lines_fastepistasis_lm_combined, pct_complete=(line_no/float(n_lines_fastepistasis_lm_combined))*100, sec=time_elapsed_loop, min=time_elapsed_loop/60)
-		
+			sys.stdout.flush()
 
 
 		#chr1, snp_A, chr2, snp_B, beta, chisq, pvalue, phenotype
