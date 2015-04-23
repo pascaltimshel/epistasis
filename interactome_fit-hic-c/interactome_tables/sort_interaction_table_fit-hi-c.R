@@ -1,6 +1,9 @@
 ############### SYNOPSIS ###################
 # CLASS: script
 # PURPOSE: sort and export fit-hi-c interaction table
+
+# REMARK: the "READING interaction table" and saving as RData is done in the following script:
+# ~/p_HiC_viz/src_ferhat/read_and_save_interaction_table_fit-hi-c.R
 ############################################
 
 library(reshape2)
@@ -10,7 +13,7 @@ library(tools)
 
 rm(list=ls())
 
-wd <- "/Users/pascaltimshel/git/epistasis/interactome_fit-hic-c"
+wd <- "/Users/pascaltimshel/git/epistasis/interactome_fit-hic-c/interactome_tables"
 setwd(wd)
 ######################
 
@@ -20,18 +23,37 @@ setwd(wd)
 ### hIMR90_HindIII - ~60 MB file
 ################################# LOADING interaction table ############################
 
+######### q_lt_0.001.inter #########
 ### hESC_HindIII
-file = path.expand("~/Dropbox/0_Projects/p_HiC_viz/RData/hESC_HindIII_hg19.spline_pass1.res10000.significances.q_lt_0.001.inter.RData") # df.interaction_table.hESC
+#file = path.expand("~/Dropbox/0_Projects/p_HiC_viz/RData/hESC_HindIII_hg19.spline_pass1.res10000.significances.q_lt_0.001.inter.RData") # df.interaction_table.hESC
 ### hIMR90_HindIII
 #file = path.expand("~/Dropbox/0_Projects/p_HiC_viz/RData/hIMR90_HindIII_hg19.spline_pass1.res10000.significances.q_lt_0.001.inter.RData") # df.interaction_table.hIMR90
+
+######### contactCount_1 #########
+### hESC
+#file = path.expand("~/Dropbox/0_Projects/p_HiC_viz/RData/hESC_HindIII_hg19.spline_pass1.res10000.significances.interchromosomal.autosomal.contactCount_1.shuf.head_5001.RData") # df.interaction_table.contactCount_1.hESC
+### hIMR90
+file = path.expand("~/Dropbox/0_Projects/p_HiC_viz/RData/hIMR90_HindIII_hg19.spline_pass1.res10000.significances.interchromosomal.autosomal.contactCount_1.shuf.head_5001.RData") # df.interaction_table.contactCount_1.hIMR90
+
+
 
 ### Load data
 load(file)
 
-### Switch - THIS MUST MATCH WITH the loaded data
-df.interaction_table <- df.interaction_table.hESC
+#################### Switch - THIS MUST MATCH WITH the loaded data #####################
+
+######### q_lt_0.001.inter #########
+#df.interaction_table <- df.interaction_table.hESC
 #df.interaction_table <- df.interaction_table.hIMR90
-hic_cell_type <- "hESC" # "hESC" "hIMR90"
+
+######### contactCount_1 #########
+#df.interaction_table <- df.interaction_table.contactCount_1.hESC
+df.interaction_table <- df.interaction_table.contactCount_1.hIMR90
+
+######### Set cell type | this is only used for the OUTPUT filename #########
+#hic_cell_type <- "hESC" # q_lt_0.001.inter | "hESC" "hIMR90"
+#hic_cell_type <- "hESC-contactCount_1" # contactCount_1
+hic_cell_type <- "hIMR90-contactCount_1" # contactCount_1
 
 ### Check data integrity
 anyNA(df.interaction_table) # False!
@@ -79,7 +101,8 @@ df.interaction_table <- df.interaction_table[!(bool.chrA.sex | bool.chrB.sex), ]
 # q.threshold	1e-18	578
 
 #for (q.threshold in c(1e-5,1e-6,1e-7,1e-8,1e-9,1e-10,1e-11)) { # hIMR90
-for (q.threshold in c(1e-12,1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
+#for (q.threshold in c(1e-12,1e-13,1e-14,1e-15,1e-16,1e-17,1e-18)) { # hESC
+for (q.threshold in c(1)) { # contactCount_1 | q.threshold just have to be > 1 to make sure that the data is not subset
 #for (q.threshold in c(1e-12)) { # test
   time_start <- proc.time()
   df.interaction_table.sub.q <- df.interaction_table[df.interaction_table$q.value<=q.threshold,]

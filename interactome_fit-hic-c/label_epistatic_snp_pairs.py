@@ -35,6 +35,33 @@ ALPHA = 0.05
 
 ###################################### Functions ######################################
 
+def get_blacklisted_snps():
+	""" 
+	Function to define and retrieve a set of blacklisted SNPs. SNPs can be blacklisted if they are e.g. duplicates from the .bim file.
+
+	### BLACKLIST LOG ###
+	04/23/2015: Added 15 unique SNPs from running "get_duplicates.py" on ~/Dropbox/5_Data/EGCUT_DATA/geno/all_clean/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.duplicates_unique_rsID.txt
+	
+	"""
+
+	blacklisted_snps_set = set(["rs4935071",
+						"rs1072594",
+						"rs2523608",
+						"rs206146",
+						"rs7383287",
+						"rs2581",
+						"rs9460309",
+						"rs241448",
+						"rs2071554",
+						"rs11244",
+						"rs2289150",
+						"rs2070121",
+						"rs1042337",
+						"rs2249255",
+						"rs241447"]) # len() --> 15
+
+	return blacklisted_snps_set
+
 def makehash():
 	""" Function to create a perl-like hash. That is, a dict with autovivification """
 	return collections.defaultdict(makehash) 
@@ -278,6 +305,11 @@ with open(file_SNP2interaction_map, 'r') as fh: # perhaps read the pickle file i
 	SNP2interaction_dict = pickle.load(fh)
 print "Done loading pickled file in {:.2f} min".format( (time.time()-time_start_tmp)/60 )
 
+###################################### Get *BLACKLISTED SNPs* ######################################
+
+blacklisted_snps_set = get_blacklisted_snps() # returns set()
+print "Retrieved blacklisted_snps_set: n={}".format(len(blacklisted_snps_set))
+
 ###################################### Open files ######################################
 
 #resource.getrlimit(resource.RLIMIT_NOFILE)
@@ -324,13 +356,16 @@ fh_unassigned = open(file_unassigned, 'w')
 
 ###################################### Main Loop ######################################
 
-### READ and WRITE line-by-line
+### Counters
 count_total = 0
 count_unassigned = 0
 count_assigned = 0
 count_multiple_assignments = 0
 count_null_false_positives = 0
 count_intrachromosomal_interactions = 0
+
+### Counters/dict
+counter_snp_not_in_SNP2interaction = collections.Counter()
 
 ################## Dict for epistatic SNP-pairs counts ##################
 #epistatic_counts_dict = collections.defaultdict(lambda: collections.defaultdict(int)) # e.g. epistatic_counts_dict['MASTER_KEY']['EXPERIMENT_IDENTIFIER'] = INTEGER
@@ -387,6 +422,7 @@ n_lines_fastepistasis_lm_combined = sum(1 for line in open(file_fastepistasis_lm
 
 time_start_loop = time.time()
 
+### READ and WRITE line-by-line
 with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 	next(fh_compiled) # SKIPPING THE FIRST LINE!
 	for line_no, line in enumerate(fh_compiled, start=1):
@@ -404,6 +440,16 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 		line = line.strip() # strip() without argument will remove BOTH leading and trailing whitespace.
 		fields = line.split() 
 		chr_A, snp_A, chr_B, snp_B, pvalue, illumina_probe_id = fields[0], fields[1], fields[2], fields[3], fields[6], fields[7]
+
+		################## EXCLUDING SNPs ##################
+		# Pascal detected 04/22/2015 that the .bim file contained DUPLICATED SNPs.
+		# This gives problems downstream analysis (e.g. R snpStats).
+		# Here we exclude a list of "black_listed_rsID"
+		### ***Write something HERE! ***
+		# 1) defined "black_listed_rsID" in the top of the program
+		# 2) check if snp_A or snp_B is in the list
+			# 2a) if yes, exclude it/them
+
 
 		################## Defining/converting variables ##################
 		### Chromosome pair
@@ -424,8 +470,18 @@ with open(file_fastepistasis_lm_combined, 'r') as fh_compiled:
 
 
 		################## SNP map and sets ##################
-		set_A = SNP2interaction_dict[snp_A] # TODO: put this into a try/except or use dict.get() for a default value
-		set_B = SNP2interaction_dict[snp_B]
+		try:
+			set_A = SNP2interaction_dict[snp_A] # TODO: put this into a try/except or use dict.get() for a default value
+		except KeyError as e:
+			set_A = set() # empty set | this is nicer to do, compared to a "continue"
+			counter_snp_not_in_SNP2interaction[snp_A] += 1 # incrementing collections.Counter()
+
+		try:
+			set_B = SNP2interaction_dict[snp_B] # TODO: put this into a try/except or use dict.get() for a default value
+		except KeyError as e:
+			set_B = set() # empty set | this is nicer to do, compared to a "continue"
+			counter_snp_not_in_SNP2interaction[snp_B] += 1 # incrementing collections.Counter()
+		
 
 		set_AB = set_A & set_B # intersection
 		### REMEMBER: the set_AB contains strings of the following format:
@@ -725,14 +781,19 @@ df_probe_counts.sort(tmp_sort_order_list, ascending=False, inplace=True)
 df_probe_counts.to_csv(file_probe_counts_csv) # sep='\t', index=True, header=True
 
 
+###################################### Write stats file ######################################
+################## Create ... ##################
 
-################## Write stats file ##################
+################## Write ##################
 with open(file_epistatic_stats, 'w') as fh:
 	fh.write( "count_unassigned: {}\n".format(count_unassigned) )
 	fh.write( "count_assigned: {} ({:.2f} % of total)\n".format(count_assigned, count_assigned/float(count_total)*100) )
 	fh.write( "count_multiple_assignments: {} ({:.2f} % of count_assigned)\n".format(count_multiple_assignments, count_multiple_assignments/float(count_assigned)*100) )
 	fh.write( "count_null_false_positives: {}\n".format(count_null_false_positives) )
 	fh.write( "count_intrachromosomal_interactions: {} ({:.2f} % of total)\n".format(count_intrachromosomal_interactions, count_intrachromosomal_interactions/float(count_total)*100) )
+
+	fh.write( "counter_snp_not_in_SNP2interaction: [{}]\n".format(counter_snp_not_in_SNP2interaction) )
+	fh.write( "sum(counter_snp_not_in_SNP2interaction.values()): {}\n".format(sum(counter_snp_not_in_SNP2interaction.values())) )
 
 
 	### Probes
