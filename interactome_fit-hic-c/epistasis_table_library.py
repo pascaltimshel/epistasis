@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import re
 import collections
 
 
@@ -10,6 +9,45 @@ N_PHENOTYPES_TESTED = 9269
 ALPHA = 0.05
 
 ###################################### Functions ######################################
+
+def detect_OS():
+	""" 
+	Function to get the OS the script is running on.
+	OSX [platform.system()] --> Darwin
+	Broad (RHEL 6) [platform.system()] --> Linux
+	"""
+	import platform
+	local_OS = platform.system()
+	return local_OS
+	
+
+def get_probe_annotation():
+	"""
+	Function to retrieve probe annotation.
+	Function automatically detects the OS (osx vs RHEL/broad) and sets the corresponding filepath.
+
+	Return value: pandas DataFrame
+	"""
+	import pandas as pd
+
+	local_OS = detect_OS()
+	if local_OS == "Darwin":
+		file_probe_annotation = "/Users/pascaltimshel/Dropbox/5_Data/EGCUT_DATA/HumanHT-12_V3/HumanHT-12_V3_0_R2_11283641_A_2_table.RefSeq.autosomes.txt"
+	elif local_OS == "Linux":
+		file_probe_annotation = "/cvar/jhlab/timshel/egcut/ETypes_annotation/HumanHT-12_V3_0_R2_11283641_A_2_table.RefSeq.autosomes.txt"
+	else:
+		raise Exception("Unknown OS. Cannot locate file_probe_annotation")
+
+	### Read file | tab seperated
+	df_probe_annotation = pd.read_csv(file_probe_annotation, sep="\t")
+	print "Read df_probe_annotation. nrow={}, ncol={}".format(df_probe_annotation.shape[0], df_probe_annotation.shape[1]) # or len(df_probe_annotation)
+	print "df_probe_annotation.dtypes:\n{}".format(df_probe_annotation.dtypes)
+
+	### Set index to "Probe_Id", that is illumina_probe_id
+	df_probe_annotation.set_index("Probe_Id", drop=False, inplace=True)
+
+
+	return df_probe_annotation
 
 def get_blacklisted_snps():
 	""" 

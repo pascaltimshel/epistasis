@@ -20,7 +20,8 @@
 library(snpStats)
 library(reshape2)
 library(ggplot2)
-library(dplyr)
+#library(dplyr)
+library(plyr)
 library(tools)
 
 rm(list=ls())
@@ -36,14 +37,20 @@ setwd(wd)
 
 ### Job
 #param.job_identifier <- "hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8" # n=38,987
-param.job_identifier <- "hESC_width_2500_maf_5_q_1e-13_epi1_1e-10" # n=248,510
+param.job_identifier <- "hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8" # n=101,057
+#param.job_identifier <- "hESC_width_2500_maf_5_q_1e-13_epi1_1e-10" # n=248,510
 
 ### Epistasis table
-param.epistasis_table.type <- "epistasis_table_pruned_hemani.txt" # this is needed for loading the correct epistasis table
+# this is needed for loading the correct epistasis table
+#param.epistasis_table.type <- "epistasis_table.txt"
+param.epistasis_table.type <- "epistasis_table_pruned_hemani.txt"
+#param.epistasis_table.type <- "epistasis_table_pruned_EIID.txt"
 
 ### Paths - out
+path.out.subdir <- "epistasis_table_processing"
+
 path.out <- path.expand("~/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2")
-path.out.base <- file.path(path.out, param.job_identifier)
+path.out.base <- file.path(path.out, param.job_identifier, path.out.subdir)
 path.out.base.analysis_epi_table <- file.path(path.out.base, "analysis_epi_table")
 path.out.base.analysis_epi_table
 
@@ -67,7 +74,7 @@ file.epi_table # e.g. "/Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compile
 ### Source ###
 source(file.path(path.library,"function_write_snp_subset_plink_file.R"))
   # write_snp_subset_plink_file()
-source(file.path(path.library,"function_subset_min_genotype_class_count.R"))
+source(file.path(path.library,"function_min_genotype_class_count.R"))
   # subset_genotype_class_count()
 source(file.path(path.library,"function_Replication_fastEpistasis_comparison.R"))
   # RunEpistasisTests()
@@ -95,14 +102,17 @@ print(path.out.base.analysis_epi_table) # no trailing slash
 
 ### READ table
 #epi_table.header <- c("CHR","SNP_A","CHR","SNP_B","BETA","CHISQ","PVALUE","PHENOTYPE","EIID","SIGNIFICANCE") # KEEP THIS HEADER UPDATED!
-epi_table.header <- c("chr1", "snp1", "chr2", "snp2", "BETA", "CHISQ", "PVALUE", "probename","EIID","bonferroni_significant") # KEEP THIS HEADER UPDATED!
+#epi_table.header <- c("chr1", "snp1", "chr2", "snp2", "BETA", "CHISQ", "PVALUE", "probename","EIID","EID",) # KEEP THIS HEADER UPDATED!
+epi_table.header <- c("chr1", "snp1", "chr2", "snp2", "BETA", "CHISQ", "PVALUE", "probename","EIID","EID",
+                      "RefSeq_ID","Symbol","Chromosome","Probe_Chr_Orientation","Probe_Coordinates_start","Probe_Coordinates") # KEEP THIS HEADER UPDATED!
 df.epi_table <- read.delim(file.epi_table, stringsAsFactors=F, header=F, col.names=epi_table.header)#
 str(df.epi_table)
 nrow(df.epi_table)
 
-### ***Creating EID column***
-df.epi_table$EID <- sub("_\\d*?$", "", df.epi_table$EIID, perl=TRUE) # OBS: meta characters need to be escaped (e.g. \d --> \\d)
-# REF for R regex: http://www.johndcook.com/blog/r_language_regex/
+### ***Creating EID column*** 
+#[*OUTCOMMENT ME LATER*]
+# df.epi_table$EID <- sub("_\\d*?$", "", df.epi_table$EIID, perl=TRUE) # OBS: meta characters need to be escaped (e.g. \d --> \\d)
+## REF for R regex: http://www.johndcook.com/blog/r_language_regex/
 
 ### Overview of EID
 df.overview <- df.epi_table %>% group_by(EID) %>% summarise(count=n()) %>% arrange(desc(count))
@@ -160,27 +170,6 @@ all(df.check.sync.probe_geno[,1]==df.check.sync.probe_geno[,2]) # --> TRUE: in s
 
 
 
-#################################### Calculate min class count ######################################
-
-source(file.path(path.library,"function_subset_min_genotype_class_count.R"))
-# From script: function_subset_min_genotype_class_count.R
-#idx <- 1:1000
-idx <- 1:nrow(df.fastEpistasis.results)
-df.output <- subset_genotype_class_count(idx=idx, df.input=df.fastEpistasis.results, min_genotype_class_count_threshold=3)
-nrow(df.output)
-  # hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8 | min 3 --> n=703
-
-# [1] "plotting #71266/#248510"
-# [1] "plotting #71267/#248510"
-# Show Traceback
-# 
-# Rerun with Debug
-# Error in data.frame(snp1.allele, snp2.allele) : 
-#   arguments imply differing number of rows: 832, 0 
-
-df.overview.2 <- df.output %>% group_by(EID) %>% summarise(count=n()) %>% arrange(desc(count))
-df.overview.2
-
 ######################################## Calculate MAF ###########################################
 ### snpStats - MAF for all SNPs in the loaded genotype file
 snpsum <- col.summary(sample$genotypes)
@@ -199,11 +188,36 @@ df.fastEpistasis.results$snp.maf.min <- with(df.fastEpistasis.results, pmin(snp1
 #sum(df.fastEpistasis.results$snp.maf.min > 0.2)
 
 #df.fastEpistasis.results.maf.gt <- subset(df.fastEpistasis.results, snp.maf.min>=0.04)
-df.fastEpistasis.results.maf.gt <- subset(df.fastEpistasis.results, snp.maf.min>=0.2)
-df.fastEpistasis.results.maf.gt
+df.fastEpistasis.results.maf.gt <- subset(df.fastEpistasis.results, snp.maf.min>=0.1)
+nrow(df.fastEpistasis.results.maf.gt)
+
+#################################### Calculate min class count ######################################
+
+source(file.path(path.library,"function_min_genotype_class_count.R"))
+# From script: function_subset_min_genotype_class_count.R
+df.input <- df.fastEpistasis.results.maf.gt
+#df.input <- df.fastEpistasis.results
+#idx <- 1:1000
+idx <- 1:nrow(df.input)
+df.min_genotype_class_count.full <- min_genotype_class_count(idx=idx, df.input=df.input)
+nrow(df.min_genotype_class_count.full)
+# hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8 | min 3 --> n=703
+
+### *THRESHOLD* ###
+min_genotype_class_count_threshold <- 10
+
+### SUBSET DATA FRAME
+df.min_genotype_class_count.sub <- subset(df.min_genotype_class_count.full, min_genotype_class_count >= min_genotype_class_count_threshold)
+print(sprintf("number of SNP-pairs satisfying criteria: %s (%.2f %%)", nrow(df.min_genotype_class_count.sub), nrow(df.min_genotype_class_count.sub)/nrow(df.min_genotype_class_count.full)*100))
+
+### 
+df.overview.2 <- df.min_genotype_class_count.sub %>% group_by(EID) %>% summarise(count=n()) %>% arrange(desc(count))
+df.overview.2
+
 
 ######################################## Run RunEpistasisTests ###########################################
-df.probe_snp_pair <- subset(df.fastEpistasis.results.maf.gt, select=c(snp1,snp2, probename))
+df.probe_snp_pair <- subset(df.min_genotype_class_count.sub, select=c(snp1,snp2, probename))
+#df.probe_snp_pair <- subset(df.fastEpistasis.results.maf.gt, select=c(snp1,snp2, probename))
 #df.probe_snp_pair <- subset(df.fastEpistasis.results, select=c(snp1,snp2, probename))
 #df.probe_snp_pair <- subset(df.fastEpistasis.results[1:100,], select=c(snp1,snp2, probename))
 str(df.probe_snp_pair)

@@ -1,6 +1,6 @@
 ############### SYNOPSIS ###################
 # CLASS: function
-# Name: function_subset_min_genotype_class_count.R
+# Name: function_min_genotype_class_count.R
 # PURPOSE: subset data based on genotype class count criteria
 
 
@@ -9,19 +9,18 @@ options(echo=TRUE)
 
 
 
-subset_genotype_class_count <- function(idx, df.input, min_genotype_class_count_threshold=5) {
+min_genotype_class_count <- function(idx, df.input) {
   ################## DESCRIPTION ################## 
   ### Input
   # df.input: a data frame with columns "probename", "snp1", "snp2". Other columns are allowed.
   
   ### Output
-  # df.output:  a data frame IDENTICAL TO df.input, BUT filtered/subsetted on the given criteria for "min_genotype_class_count_threshold"
+  # df.output:  a data frame IDENTICAL TO df.input, annotated with "min_genotype_class_count_threshold"
   
   ### FOR DEBUGGING ##
   #i <- 2
   #i <- 71267
   #idx <- 1:1000
-  #min_genotype_class_count_threshold <- 5
   #df.input <- df.fastEpistasis.results
   
   ################## DEPENDENCIES ################## 
@@ -29,8 +28,8 @@ subset_genotype_class_count <- function(idx, df.input, min_genotype_class_count_
   library(doMC)
   
   ################## Initialyzing ################## 
-  ### Adding new column. This is used to keep track of which rows to remove
-  df.input$keep <- FALSE
+  ### Adding new column.
+  df.input$min_genotype_class_count <- NA
   
   #idx = 1:nrow(df.input) # loop over all SNPs
   #idx = 1:1000 # loop over subset (for testing)
@@ -38,7 +37,7 @@ subset_genotype_class_count <- function(idx, df.input, min_genotype_class_count_
   ################ CPU Parameters #########################
   #param.N_cores <- detectCores() # OSX --> 8
   param.N_cores <- 4
-  print(paste("number of CPUs available:", param.N_cores))
+  print(paste("param.N_cores:", param.N_cores))
   registerDoMC(param.N_cores)
   print(paste("number of CPUs used:", getDoParWorkers()))
   
@@ -46,7 +45,7 @@ subset_genotype_class_count <- function(idx, df.input, min_genotype_class_count_
   ################## Main loop ################## 
   time.start.main_loop <- proc.time()
   #list.par_analysis <- foreach (i=idx, .packages=c("plyr")) %dopar% {
-  vector.keep <- foreach (i=idx, .combine="c") %dopar% {
+  vector.min_genotype_class_count <- foreach (i=idx, .combine="c") %dopar% {
   #for (i in idx) {
     print(sprintf("#%d/#%d", i, length(idx)))
     
@@ -107,18 +106,10 @@ subset_genotype_class_count <- function(idx, df.input, min_genotype_class_count_
         #     11	2	2	642
     
     min_genotype_class_count <- min(df.twolocus.narm$Freq)
-    min_genotype_class_count
     
-    if (min_genotype_class_count >= min_genotype_class_count_threshold) {
-      flag.keep <- TRUE
-    } else {
-      flag.keep <- FALSE
-    }
-    
-    #df.input[i, "keep"] <- flag.keep # NOT parallel
-    return(flag.keep) # parallel | not sure that return() is needed
-    #flag.keep
-    
+
+    return(min_genotype_class_count) # # parallel | not sure that return() is needed
+
 } # END for-loop
 
 ### Timing
@@ -126,14 +117,11 @@ time.end.main_loop <- proc.time()
 time.elapsed.main_loop <- time.end.main_loop[3] - time.start.main_loop[3]
 print(sprintf("Time elapsed: %.1f sec [%.1f min]", time.elapsed.main_loop, time.elapsed.main_loop/60))
 
-df.input[idx, "keep"] <- vector.keep
-
-n_keep <- sum(df.input$keep==TRUE)
-n_removed <- sum(df.input$keep==FALSE)
-print(sprintf("number of keep SNP-pairs: %s (%.2f %%)", n_keep, n_keep/nrow(df.input)*100))
+df.input[idx, "min_genotype_class_count"] <- vector.min_genotype_class_count
 
 ################## Return value ################## 
-df.output <- subset(df.input, keep==TRUE, select=-keep) # subsetting and removing "keep" column
+#df.output <- subset(df.input, keep==TRUE, select=-keep) # subsetting and removing "keep" column
+df.output <- df.input
 
 return(df.output)
 

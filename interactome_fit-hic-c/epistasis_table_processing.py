@@ -35,10 +35,30 @@ import epistasis_table_library
 ##### hESC #####
 
 ################## OSX ##################
-##### hIMR90 #####
+##### TEST #####
 # python epistasis_table_processing.py --path_main_input /Users/pascaltimshel/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/fastEpi_compiled/hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8_test_case/assigned
 
-##### hESC #####
+####### hIMR90 [5] #######
+# JOB_DIR_NAME="hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10"; python epistasis_table_processing.py --path_main_input /Users/pascaltimshel/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/$JOB_DIR_NAME
+# JOB_DIR_NAME="hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8"; python epistasis_table_processing.py --path_main_input /Users/pascaltimshel/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/$JOB_DIR_NAME
+# JOB_DIR_NAME="hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8"; python epistasis_table_processing.py --path_main_input /Users/pascaltimshel/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/$JOB_DIR_NAME
+# JOB_DIR_NAME="hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8"; python epistasis_table_processing.py --path_main_input /Users/pascaltimshel/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/$JOB_DIR_NAME
+# JOB_DIR_NAME="hIMR90_width_1000_maf_5_q_1e-06_epi1_1e-10"; python epistasis_table_processing.py --path_main_input /Users/pascaltimshel/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/$JOB_DIR_NAME
+
+####### hESC [4] #######
+# JOB_DIR_NAME="hESC_width_1000_maf_5_q_1e-12_epi1_1e-10"; python epistasis_table_processing.py --path_main_input /Users/pascaltimshel/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/$JOB_DIR_NAME
+# JOB_DIR_NAME="hESC_width_500_maf_5_q_1e-14_epi1_1e-8"; python epistasis_table_processing.py --path_main_input /Users/pascaltimshel/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/$JOB_DIR_NAME
+# JOB_DIR_NAME="hESC_width_500_maf_5_q_1e-16_epi1_1e-8"; python epistasis_table_processing.py --path_main_input /Users/pascaltimshel/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/$JOB_DIR_NAME
+# JOB_DIR_NAME="hESC_width_2500_maf_5_q_1e-13_epi1_1e-10"; python epistasis_table_processing.py --path_main_input /Users/pascaltimshel/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/$JOB_DIR_NAME
+
+####### lan-et-al_K562 [2] #######
+# JOB_DIR_NAME="lan-et-al_K562_width_1000_maf_5_q_OUTLIER_RM_epi1_1e-8"; python epistasis_table_processing.py --path_main_input /Users/pascaltimshel/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/$JOB_DIR_NAME
+# JOB_DIR_NAME="lan-et-al_K562_width_5000_maf_5_q_OUTLIER_RM_epi1_1e-8"; python epistasis_table_processing.py --path_main_input /Users/pascaltimshel/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/$JOB_DIR_NAME
+
+####### contactCount_1 #######
+# JOB_DIR_NAME="hESC-contactCount_1_width_1000_maf_5_q_1_epi1_1e-8"; python epistasis_table_processing.py --path_main_input /Users/pascaltimshel/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/$JOB_DIR_NAME
+# JOB_DIR_NAME="hIMR90-contactCount_1_width_1000_maf_5_q_1_epi1_1e-8"; python epistasis_table_processing.py --path_main_input /Users/pascaltimshel/Dropbox/0_Projects/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/$JOB_DIR_NAME
+
 
 ###################################### SYNOPSIS ######################################
 
@@ -106,6 +126,7 @@ path_main_out = path_main_input + "/epistasis_table_processing" # dir
 # extension_XXX = ".txt" # file extension name
 
 ### Epistasis: epistasis tables
+file_epistasis_table_processed = path_main_out + "/epistasis_table_pruned_processed.txt"
 file_epistasis_table_pruned_EIID = path_main_out + "/epistasis_table_pruned_EIID.txt"
 file_epistasis_table_pruned_hemani = path_main_out + "/epistasis_table_pruned_hemani.txt"
 
@@ -144,11 +165,11 @@ if not os.path.exists(file_experiments_list):
 if os.path.exists(path_main_out):
 	print "WARNING: path_main_out={} exists".format(path_main_out)
 	
-	if flag_mode_interactive: # only ask for user input if the script is running from command line
-		ans = ""
-		while ans != "yes":
-			ans = raw_input("Do you want overwrite the content (type 'yes' to continue)? ")
-		print # add extra newline
+	# if flag_mode_interactive: # only ask for user input if the script is running from command line
+	# 	ans = ""
+	# 	while ans != "yes":
+	# 		ans = raw_input("Do you want overwrite the content (type 'yes' to continue)? ")
+	# 	print # add extra newline
 
 ################## *Make OUTPUT dirs* ##################
 for path in [path_main_out]:
@@ -181,6 +202,12 @@ with open(file_probe_list, 'r') as fh:
 n_probes = len(probes_dict.keys())
 assert(n_probes == epistasis_table_library.N_PHENOTYPES_TESTED) # 9269
 
+###################################### Get probe annotation ######################################
+
+print "Will call function to get probe annotation"
+df_probe_annotation = epistasis_table_library.get_probe_annotation() # index of df is Probe_Id (illumina_probe_id)
+
+
 ###################################### Main Loop ######################################
 
 ################## Dict for epistatic SNP-pairs counts ##################
@@ -200,6 +227,8 @@ epistatic_counts_dict["count_significant_pruned_hemani"] = collections.defaultdi
 ################## Dict for epistasis_table_*.txt ##################
 # EID = Experimental IDentifier. E.g. hic_1, null_1
 # EIID = Experimental Interaction IDentifier. E.g. hic_1_1923, null_1_119
+epistasis_table_dict = collections.defaultdict(list) # *OBS*: list
+# 	# D[EID].append(line)
 epistasis_table_pruned_EIID_dict = epistasis_table_library.makehash() # "hash"/auto-vivification
 	# D[EID][EIID]['best_pvalue'] = pvalue
 	# D[EID][EIID]['best_line'] = line
@@ -261,8 +290,26 @@ with open(file_epistasis_table, 'r') as fh_compiled:
 		pvalue = float(pvalue)
 
 
-		### probes
+		### probes counting
 		df_probe_counts.ix[illumina_probe_id, "count_assigned_significant"] += 1
+		
+		### get probe annoation ###
+		#columns of interest:
+			# (Probe_Id --> illumina_probe_id)
+			# RefSeq_ID --> e.g. NM_017583.3, XM_373469.3 [OBS: Trim the dot (".") and the trailing number - this will allow to map genes via DAVID]
+			# Symbol --> e.g. TRIM44, LOC387701
+			# Chromosome --> 11, 10
+			# Probe_Chr_Orientation --> +, -
+			# Probe_Coordinates --> [35786070-35786119], [92811754-92811767:92811768-92811803]
+		phenotype_annotation_dict = dict()
+		phenotype_annotation_dict["RefSeq_ID"] = df_probe_annotation.ix[illumina_probe_id, "RefSeq_ID"]
+		phenotype_annotation_dict["Symbol"] = df_probe_annotation.ix[illumina_probe_id, "Symbol"]
+		phenotype_annotation_dict["Chromosome"] = int(df_probe_annotation.ix[illumina_probe_id, "Chromosome"]) # OBS: int()
+		phenotype_annotation_dict["Probe_Chr_Orientation"] = df_probe_annotation.ix[illumina_probe_id, "Probe_Chr_Orientation"]
+		phenotype_annotation_dict["Probe_Coordinates_start"] = int(df_probe_annotation.ix[illumina_probe_id, "Probe_Coordinates"].split("-")[0]) # OBS: int()
+			# e.g. 92811754-92811767:92811768-92811803 --> 92811754
+		phenotype_annotation_dict["Probe_Coordinates"] = df_probe_annotation.ix[illumina_probe_id, "Probe_Coordinates"]
+
 
 		### epistasis
 		epistatic_counts_dict['count_significant'][EID] += 1
@@ -270,8 +317,19 @@ with open(file_epistasis_table, 'r') as fh_compiled:
 
 
 		### Line output
-		line_out = "{}\t{}\t{}".format(line, EIID, EID)
+		line_out = "{}\t{}\t{}\t{}\t{}\t{}\t{}".format(
+			line,
+			phenotype_annotation_dict["RefSeq_ID"],
+			phenotype_annotation_dict["Symbol"],
+			phenotype_annotation_dict["Chromosome"],
+			phenotype_annotation_dict["Probe_Chr_Orientation"],
+			phenotype_annotation_dict["Probe_Coordinates_start"],
+			phenotype_annotation_dict["Probe_Coordinates"]
+			)
+		#line_out = line
 
+		# epistasis_table_dict
+		epistasis_table_dict[EID].append( line_out )
 		# epistasis_table_pruned_EIID_dict
 		if pvalue < epistasis_table_pruned_EIID_dict[EID][EIID]['best_pvalue']:
 			# D[EID][EIID]['best_pvalue'] = pvalue
@@ -288,8 +346,12 @@ print "Done with main loop!"
 ###################################### PROCESS and WRITE epistasis_table_* content ######################################
 
 ################## POPULATE *epistatic_counts_dict* AND WRITE epistasis_table_* ##################
-# Populate dict with data from epistasis_table_*
-	
+### epistasis_table_dict ###
+with open(file_epistasis_table_processed, 'w') as fh:
+	for EID in sorted(epistasis_table_dict, key=epistasis_table_library.function_sort_EID):
+		list_of_line_out = epistasis_table_dict[EID]
+		for line_out in list_of_line_out:
+			fh.write( line_out + "\n" )
 
 ### epistasis_table_pruned_EIID_dict ###
 ## epistasis_table_pruned_EIID_dict[EID][EIID]['best_pvalue'] = pvalue
