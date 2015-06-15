@@ -211,8 +211,11 @@ df.min_genotype_class_count.sub <- subset(df.min_genotype_class_count.full, min_
 print(sprintf("number of SNP-pairs satisfying criteria: %s (%.2f %%)", nrow(df.min_genotype_class_count.sub), nrow(df.min_genotype_class_count.sub)/nrow(df.min_genotype_class_count.full)*100))
 
 ### 
-df.overview.2 <- df.min_genotype_class_count.sub %>% group_by(EID) %>% summarise(count=n()) %>% arrange(desc(count))
+#df.overview.2 <- df.min_genotype_class_count.sub %>% group_by(EID) %>% dplyr::summarise(count=dplyr::n()) %>% arrange(desc(count))
+df.overview.2 <- df.min_genotype_class_count.sub %>% dplyr::count(EID) %>% arrange(desc(n))
 df.overview.2
+
+
 
 
 ######################################## Run RunEpistasisTests ###########################################
@@ -270,8 +273,8 @@ df.res.merge.export <- df.res.merge
 
 
 ##################################### Plot epistasis model  ###########################################
-idx <- 1:10
-#idx <- 1:nrow(df.snp_probe_pairs.subset)
+#idx <- 1:10
+idx <- 1:nrow(df.probe_snp_pair)
 ### Run function from script "function_plot_epistasis_model.R"
 plots <- plot_EpiModel(idx, df.probe_snp_pair, path.out=path.out.base.plots_model, add_data_heatmap=TRUE, save_images=TRUE, save_significant_treshold=1e-5)
 ## TODO plot_EpiModel()
