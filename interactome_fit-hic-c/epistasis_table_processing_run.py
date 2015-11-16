@@ -18,7 +18,7 @@ import subprocess
 ###################################### PARAMETERs ###################################### 
 
 epi_job_identifier_list = [
-# "hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10",
+"hIMR90_width_50000_maf_5_q_1e-09_epi1_1e-10",
 "hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8",
 "hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8",
 "hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8",
@@ -26,18 +26,22 @@ epi_job_identifier_list = [
 
 ###### hESC [4] #######
 "hESC_width_1000_maf_5_q_1e-12_epi1_1e-10",
-# "hESC_width_500_maf_5_q_1e-14_epi1_1e-8",
-# "hESC_width_500_maf_5_q_1e-16_epi1_1e-8",
+"hESC_width_500_maf_5_q_1e-14_epi1_1e-8",
+"hESC_width_500_maf_5_q_1e-16_epi1_1e-8",
 "hESC_width_2500_maf_5_q_1e-13_epi1_1e-10",
 
 ###### lan-et-al_K562 [2] #######
-# "lan-et-al_K562_width_1000_maf_5_q_OUTLIER_RM_epi1_1e-8",
-# "lan-et-al_K562_width_5000_maf_5_q_OUTLIER_RM_epi1_1e-8",
+"lan-et-al_K562_width_1000_maf_5_q_OUTLIER_RM_epi1_1e-8",
+"lan-et-al_K562_width_5000_maf_5_q_OUTLIER_RM_epi1_1e-8",
 
 ###### contactCount_1 #######
-# "hESC-contactCount_1_width_1000_maf_5_q_1_epi1_1e-8",
-# "hIMR90-contactCount_1_width_1000_maf_5_q_1_epi1_1e-8", # trailing comma "," is ok
+"hESC-contactCount_1_width_1000_maf_5_q_1_epi1_1e-8",
+"hIMR90-contactCount_1_width_1000_maf_5_q_1_epi1_1e-8", # trailing comma "," is ok
 ]
+
+
+#epi_job_identifier_list= ["hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8"]
+#epi_job_identifier_list= ["hIMR90_width_500_maf_5_q_1e-08_epi1_1e-8"]
 
 ###################################### Run subprocesses ######################################
 

@@ -23,16 +23,20 @@
 # Finaly, a grid is wrapped around it
 ############################################
 
-plot_EpiModel <- function(idx, df.input, path.out="./", add_data_heatmap=FALSE, save_images=TRUE, save_significant_treshold=1) {
+plot_EpiModel <- function(idx, df.input, path.out="./", add_text_annotation=TRUE, add_data_heatmap=FALSE, save_images=TRUE, save_significant_treshold=1, plot.points.alpha=0.3) {
   ### Defaults
   # path.out --> current working directory.
   
   
   #plots <- list()
   
-  ### FOR DEBUGGING ##
+  ### FOR DEBUGGING | "STABLE" CASE ##
   #i <- 2
   #df.input <- df.fastEpistasis.results
+  
+  ### FOR DEBUGGING | TEMPORARY CASE ##
+  i <- 2
+  df.input <- df.selected
   
   for (i in idx) {
     print(sprintf("plotting #%d/#%d", i, length(idx)))
@@ -69,6 +73,7 @@ plot_EpiModel <- function(idx, df.input, path.out="./", add_data_heatmap=FALSE, 
     margmod.multiplicative <- lm(probe ~ snp1 + snp2) # Reduced
     fullmod.multiplicative
     summary(fullmod.multiplicative)
+    summary(fullmod.multiplicative)$r.squared # Multiple R-squared
     beta_mu <- fullmod.multiplicative$coefficients[1]
     beta_snp1 <- fullmod.multiplicative$coefficients[2]
     beta_snp2 <- fullmod.multiplicative$coefficients[3]
@@ -78,12 +83,25 @@ plot_EpiModel <- function(idx, df.input, path.out="./", add_data_heatmap=FALSE, 
     inttest_multiplicative_pval
     #-log10(inttest_multiplicative_pval) # P-value
     
+    #leveragePlots(fullmod.multiplicative)
+    #plot(fullmod.multiplicative)
     
     ### Summarizing expression data
     df <- data.frame(snp1=as.factor(snp1), snp2=as.factor(snp2), probe=probe)
     df.mean <- ddply(df, .(snp1, snp2), summarize,
                      mean=mean(probe, na.rm=T),
                      sd=sd(probe, na.rm=T))
+    ### Replace NA in sd column with 0
+      # --> NA values occur in the sd column when length-one vector is present (genotype class count == 1)
+     df.mean$sd[is.na(df.mean$sd)] <- 0 # *OBS*: df.mean$sd==NA does *NOT* work!
+#     snp1  snp2	mean	sd
+#     0	1	1.454427004	2.00670755
+#     0	2	0.024480740	0.06535981
+#     1	1	0.055989779	0.06815189
+#     1	2	0.003592626	0.07120687
+#     1	NA	-0.055168152	0.07441316
+#     ....
+    ### Remove rows with NA. That is, we do not want to plot the combination {snp1=0, snp2=NA}.
     df.mean <- df.mean[complete.cases(df.mean),]
     
     #str(df)
@@ -107,16 +125,22 @@ plot_EpiModel <- function(idx, df.input, path.out="./", add_data_heatmap=FALSE, 
     
     p <- ggplot()
     ### plot points - *removing* "NA" values: na.omit()
-    p <- p + geom_point(data=na.omit(df), aes(x=snp1, y=probe, color=snp2), alpha=0.2)
+    p <- p + geom_point(data=na.omit(df), aes(x=snp1, y=probe, color=snp2), alpha=plot.points.alpha)
     ### mean expression
     p <- p + geom_line(data=df.mean, aes(x=snp1, y=mean, group=snp2, color=snp2))
     ### predicted
     p <- p + geom_line(data=grid, aes(x=snp1, y=probe, group=snp2, color=snp2), linetype="dashed", size=1.5)
-    ### add text annotation
-    p <- p + annotate(geom="text", x=3, y=max(df$probe), label=str_combined, vjust=1.25, hjust=1)
+    if (add_text_annotation) {
+      ### add text annotation
+      p <- p + annotate(geom="text", x=3, y=max(df$probe), label=str_combined, vjust=1.25, hjust=1)
+    }
     ### Setting labs
-    p <- p + labs(title=str_title, y="probe expression (PEER residual)")
-    
+    #p <- p + labs(title=str_title, x="SNP 1 allele", y="Probe expression (PEER residual)")
+    p <- p + labs(title=str_title, x=paste0(name.snp1," allele"), y="Probe expression (PEER residual)")
+    ### Setting legend
+    #p <- p + guides(color=guide_legend(title="SNP 2 allele"))
+    p <- p + guides(color=guide_legend(title=paste0(name.snp2,"\nallele")))
+
     #plots[[length(plots)+1]] <- p
     #return(plots)
     
@@ -132,7 +156,10 @@ plot_EpiModel <- function(idx, df.input, path.out="./", add_data_heatmap=FALSE, 
       df.twolocus <- as.data.frame(tab.allele) #   snp1.allele	snp2.allele	Freq
       ### Plot
       p.data_heatmap <- ggplot(df.twolocus, aes(x=snp1.allele, y=snp2.allele)) + geom_tile(aes(fill=Freq))
-      p.data_heatmap <- p.data_heatmap + geom_text(aes(label = Freq))
+      p.data_heatmap <- p.data_heatmap + geom_text(aes(label = Freq), color="white")
+      #p.data_heatmap <- p.data_heatmap + labs(x="SNP 1 allele", y="SNP 2 allele")
+      p.data_heatmap <- p.data_heatmap + labs(x=paste0(name.snp1," allele"), y=paste0(name.snp2," allele"))
+      p.data_heatmap <- p.data_heatmap + guides(fill=FALSE)
       
       ### List of plots
       plots <- list(p, p.data_heatmap) 
@@ -147,7 +174,7 @@ plot_EpiModel <- function(idx, df.input, path.out="./", add_data_heatmap=FALSE, 
       file_name <- paste(path.out, file_name, sep="")
       
       ### Save using print()
-      pdf(file_name, width=10, height=6)
+      pdf(file_name, width=10, height=4)
       multiplot(plotlist=plots, cols=2)
       #multiplot(p.data_heatmap, cols=2)
       dev.off()

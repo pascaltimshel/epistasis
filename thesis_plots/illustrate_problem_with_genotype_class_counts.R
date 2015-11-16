@@ -1,19 +1,8 @@
 ############### SYNOPSIS ###################
-# CLASS: script; analysis; explorative
-# PURPOSE: read and explore epistasis_table
+# CLASS: script; thesis illustration
+# PURPOSE: illustrate the problem with low genotype class counts
 
-# *IMPORTANT*: this script originated as a MODIFIED DUPLICATE of another script.
-# VERSION v.1 --> "compare_R_and_FastEpistasis_p-values_inflated_p_values.R" from the "..XXX/EGCUT_DATA/R_epistasis_tests" directory
-# VERSION v.2 --> "analyze_FastEpistasis_p-values_fit-hi-c.R"
-
-# STEPS
-# 1) Read *epistasis_table*
-# 2a) Extract SNPs and write reduced PLINK files
-# 2b) Read PLINK files (this is needed for MAF calculation and R-anova model)
-# 3) Calculate MAF
-# 4) Run RunEpistasisTests
-# 5) Make plots
-# 6) OPTIONAL: export merged results
+# *IMPORTANT*: this script is a PARTIAL COPY of another script "explore_epistasis_table.R"
 
 ############################################
 
@@ -26,7 +15,7 @@ library(tools)
 
 rm(list=ls())
 
-wd <- path.expand("~/git/epistasis/interactome_fit-hic-c")
+wd <- path.expand("~/git/epistasis/thesis_plots")
 setwd(wd)
 ######################
 
@@ -37,8 +26,8 @@ setwd(wd)
 
 ### Job
 #param.job_identifier <- "hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8" # n=38,987
-param.job_identifier <- "hIMR90_width_1000_maf_5_q_1e-06_epi1_1e-10" # n=96,083 | EIID_probe
-#param.job_identifier <- "hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8" # n=102,339 | EIID_probe
+#param.job_identifier <- "hIMR90_width_1000_maf_5_q_1e-06_epi1_1e-10" # n=96,083 | EIID_probe
+param.job_identifier <- "hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8" # n=102,339 | EIID_probe
 
 #param.job_identifier <- "hESC_width_2500_maf_5_q_1e-13_epi1_1e-10" # n=248,510
 
@@ -53,7 +42,7 @@ path.out.subdir <- "epistasis_table_processing"
 
 path.out <- path.expand("~/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2")
 path.out.base <- file.path(path.out, param.job_identifier, path.out.subdir)
-path.out.base.analysis_epi_table <- file.path(path.out.base, "analysis_epi_table")
+path.out.base.analysis_epi_table <- file.path(path.out.base, "analysis_epi_table_GENOTYPE_CLASS_COUNT") #***OBS*** NEW
 path.out.base.analysis_epi_table
 
 path.out.base.plots_model <- file.path(path.out.base.analysis_epi_table, "plot_epistasis_model")
@@ -75,13 +64,13 @@ file.epi_table # e.g. "/Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compile
 
 ### Source ###
 source(file.path(path.library,"function_write_snp_subset_plink_file.R"))
-  # write_snp_subset_plink_file()
+# write_snp_subset_plink_file()
 source(file.path(path.library,"function_min_genotype_class_count.R"))
-  # subset_genotype_class_count()
+# subset_genotype_class_count()
 source(file.path(path.library,"function_Replication_fastEpistasis_comparison.R"))
-  # RunEpistasisTests()
+# RunEpistasisTests()
 source(file.path(path.library,"function_plot_epistasis_model.R"))
-  # plot_EpiModel()
+# plot_EpiModel()
 
 
 ### Create directories if needed
@@ -95,8 +84,8 @@ print(path.out.base.analysis_epi_table) # no trailing slash
 ################################# LOAD epistasis_table ############################
 ### EXAMPLE - April 2015 ###
 ### REMARKS
-  # - no header
-# 5  rs7722032  21	rs7281390	-0.23753	57.45355	3.46056E-14	ILMN_1699160	hic_1_5965	True
+# - no header
+# 5  rs7722032  21  rs7281390	-0.23753	57.45355	3.46056E-14	ILMN_1699160	hic_1_5965	True
 # 1	rs11122320	2	rs4954710	+0.12256	53.48095	2.61113E-13	ILMN_1688234	hic_1_2276	True
 # ...
 # 4  rs7676504	18	rs1943313	+0.33703	58.93330	1.63108E-14	ILMN_1791759	null_1_7165	True
@@ -198,8 +187,8 @@ str(df.fastEpistasis.results)
 df.fastEpistasis.results$snp.maf.min <- with(df.fastEpistasis.results, pmin(snp1.maf, snp2.maf))
 #sum(df.fastEpistasis.results$snp.maf.min > 0.2)
 
-#df.fastEpistasis.results.maf.gt <- subset(df.fastEpistasis.results, snp.maf.min>=0.04)
-df.fastEpistasis.results.maf.gt <- subset(df.fastEpistasis.results, snp.maf.min>=0.1)
+df.fastEpistasis.results.maf.gt <- subset(df.fastEpistasis.results, snp.maf.min>=0.04) # *OBS: only TEMPORARY*
+#df.fastEpistasis.results.maf.gt <- subset(df.fastEpistasis.results, snp.maf.min>=0.1)
 #df.fastEpistasis.results.maf.gt <- subset(df.fastEpistasis.results, snp.maf.min>=0.25)
 nrow(df.fastEpistasis.results.maf.gt)
 
@@ -216,11 +205,15 @@ nrow(df.min_genotype_class_count.full)
 # hIMR90_width_500_maf_5_q_1e-06_epi1_1e-8 | min 3 --> n=703
 
 ### *THRESHOLD* ###
-min_genotype_class_count_threshold <- 3 # 3 | 5 | 10
+min_genotype_class_count_threshold <- 0 # 3 | 5 | 10
 
 ### SUBSET DATA FRAME
 df.min_genotype_class_count.sub <- subset(df.min_genotype_class_count.full, min_genotype_class_count >= min_genotype_class_count_threshold)
 print(sprintf("number of SNP-pairs satisfying criteria: %s (%.2f %%)", nrow(df.min_genotype_class_count.sub), nrow(df.min_genotype_class_count.sub)/nrow(df.min_genotype_class_count.full)*100))
+
+########## TEMPORARY - SAVE ########
+#save(df.min_genotype_class_count.full, file="df.min_genotype_class_count.full.hIMR90_l-2500.RData")
+#save(df.min_genotype_class_count.full, file="df.min_genotype_class_count.full.hIMR90_l-1000.RData")
 
 ################################ *** EPISTASIS ENRICHMENT *** #################################
 
@@ -243,178 +236,102 @@ sum(df.enrichment$count1_no_min_geno >= df.tmp.enrichment.hic$count1_no_min_geno
 sum(df.enrichment$count2_min_geno >= df.tmp.enrichment.hic$count2_min_geno)/1000
 
 
-#############################
-### RENAME VARIABLES!!!
-names(df.enrichment) #  "EID", "count1_no_min_geno", "count2_min_geno"   
-df.enrichment.rename <- dplyr::rename(df.enrichment, "Without min. genotype class filter"=count1_no_min_geno, "With min. genotype class filter"=count2_min_geno)
+##################################### *** ARRANGE/SORT the EPISTASIS table ***  ###########################################
+str(df.min_genotype_class_count.sub)
+df.x <- df.min_genotype_class_count.sub %>% arrange(desc(min_genotype_class_count),desc(BETA))
+#df.x <- df.min_genotype_class_count.sub %>% arrange(desc(BETA), desc(min_genotype_class_count))
+nrow(df.x)
 
-### MELT
-# *OBS:* using renamed variables!!!
-df.enrichment.melt <- melt(df.enrichment.rename, id.vars="EID")
-
-### Extract hic_1 observations
-df.enrichment.melt.hic <- subset(df.enrichment.melt, EID=="hic_1")
-### Exclude hic_1 observation (we do not want to show this observation in the histogram)
-df.enrichment.melt <- subset(df.enrichment.melt, EID!="hic_1")
-nrow(df.enrichment.melt) == 1000*(ncol(df.enrichment.melt)-1) # MUST be TRUE
-
-### Plot
-p <- ggplot(df.enrichment.melt)
-p <- p + facet_wrap(~variable, ncol=1, scales="free_y")
-#p <- p + facet_wrap(~variable, ncol=1, scales="free") # 
-p <- p + geom_histogram(aes(x=value), origin=1, binwidth=1, alpha=1) #+ scale_x_continuous(breaks=0:10)
-### ALTERNATIVE to HISTOGRAM: using bar-plot. WORKS, BUT DOES *NOT* LOOK NICE.
-#df.tmp.table <- data.frame(table(df.enrichment.melt[,c(2,3)])) # variable  value	Freq
-#p <- p + geom_bar(data=df.tmp.table, aes(x=value, y=Freq), stat="identity", binwidth=1, alpha=1)
-
-### Labels
-p <- p + labs(x="Number of epistatic SNP-probe pairs", y="Count")
-
-#### To display different lines in different facets, you need to create a data frame.
-### Observed Hi-C count | vline + text
-p <- p + geom_vline(data=df.enrichment.melt.hic, aes(xintercept=value), color="red")
-p <- p + geom_text(data=df.enrichment.melt.hic, aes(x=value, y=0, label=value), hjust=1, vjust=0, color="red")
-p
-
-### SAVE PLOTS
-##hIMR90_width_1000_maf_5_q_1e-06_epi1_1e-10
-#ggsave(file="epistasis_enrichment_hIMR90_width_1000_maf_5_q_1e-06_epi1_1e-10_geno_filter_min_3-6x3.pdf", w=6, h=3)
-#ggsave(file="epistasis_enrichment_hIMR90_width_1000_maf_5_q_1e-06_epi1_1e-10_geno_filter_min_3-8x4.pdf", w=8, h=4)
-
-### SAVE PLOTS
-##hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8
-#ggsave(file="epistasis_enrichment_hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8_geno_filter_min_3-6x3.pdf", w=6, h=3)
-#ggsave(file="epistasis_enrichment_hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8_geno_filter_min_3-8x4.pdf", w=8, h=4)
+#####################################################################################################
+##################################### Plot epistasis model  #########################################
 
 
+#ILMN_2065022 |rs10041179, rs9294148 #--> USE THIS | min_geno = 0 | PVALUE 2e-110
+#plot_epistasis_model3_ILMN_1680436|rs1478590-rs10132344 #--> USE THIS | min_geno = 1
+#plot_epistasis_model8_ILMN_1781285|rs322673-rs2329119 #--> USE THIS | min_geno = 9
 
-######################################## Run RunEpistasisTests ###########################################
-df.probe_snp_pair <- subset(df.min_genotype_class_count.sub, select=c(snp1,snp2, probename))
-#df.probe_snp_pair <- subset(df.fastEpistasis.results.maf.gt, select=c(snp1,snp2, probename))
-#df.probe_snp_pair <- subset(df.fastEpistasis.results, select=c(snp1,snp2, probename))
-#df.probe_snp_pair <- subset(df.fastEpistasis.results[1:100,], select=c(snp1,snp2, probename))
-str(df.probe_snp_pair)
-
-### From script "function_Replication_fastEpistasis_comparison.R"
-# df.probe_snp_pair: 3 columns. snp1;snp2,probename
-df.res <- RunEpistasisTests(idx=1:nrow(df.probe_snp_pair), 
-                            df.probe_snp_pair=df.probe_snp_pair, 
-                            geno=geno, 
-                            expression=df.probes)
-str(df.res)
-
-### Create ID column: probe.snp1.snp2
-df.res$ID <- apply(df.res[,c("probename", "snp1", "snp2")], 1, function(df.row) {paste(df.row[1], paste(sort(c(as.character(df.row[2]), as.character(df.row[3]))),collapse="."),sep=".")})
-## OLD METHOD USING sapply (2x slower than apply)
-#df.res$ID <- sapply(1:nrow(df.res), function(i) {paste(df.res$probename[i], paste(sort(c(as.character(df.res$snp1[i]), as.character(df.res$snp2[i]))),collapse="."),sep=".")})
-
-### MERGE data frames - keep all observations in "df.res" (?)
-df.res.merge <- merge(df.res, df.fastEpistasis.results, by=c("ID"), all.x=T)
-#df.res.merge <- merge(df.res, df.fastEpistasis.results, by=c("snp1", "snp2"), all.x=T) #  by.x=c("snp1", "snp2"), by.y=c("SNP_A", "SNP_B")
+#plot_epistasis_model46_ILMN_2385239|rs4519460-rs1224449 # min_geno = 6
+df.selected <- df.min_genotype_class_count.sub %>% filter(
+                                          (snp1=="rs10041179" & snp2=="rs9294148" & probename=="ILMN_2065022")
+                                          |(snp1=="rs1478590" & snp2=="rs10132344" & probename=="ILMN_1680436") 
+                                          |(snp1=="rs322673" & snp2=="rs2329119" & probename=="ILMN_1781285")
+                                          )
+df.selected
 
 
-################# Make some plots ####################
-ggplot(df.res.merge, aes(x=beta, y=BETA)) + geom_point() + geom_abline() #beta_plot-6x6
-#ggsave("beta_plot-6x6.pdf")
-ggplot(df.res.merge, aes(x=F_statistic, y=CHISQ)) + geom_point() # F-statistic_plot-6x6
-ggplot(df.res.merge, aes(x=-log10(F_pval), y=-log10(PVALUE))) + geom_point() # P-value_plot-6x6
-ggplot(df.res.merge, aes(x=-log10(F_pval), y=-log10(PVALUE))) + geom_point(aes(color=n_usable_data_points)) + geom_abline() # P-value_plot_with_abline_and_color-6x6
-#ggsave("P-value_plot_with_abline_and_color-6x6.pdf")
-
-### *NEW* ####
-## Scatter plot; color=MAF
-df.res.merge.edit <- df.res.merge
-df.res.merge.edit$min_maf <- pmin(df.res.merge.edit$snp1_maf, df.res.merge.edit$snp2_maf) # pmin()
-ggplot(df.res.merge.edit, aes(x=-log10(F_pval), y=-log10(PVALUE))) + geom_point(aes(color=min_maf)) + geom_abline() # 
-#ggsave("P-value_plot_with_abline_and_color-minMAF6x6.pdf")
-
-## Histplot MAF # ****THIS IS HERE I STOPPED ****** #
-#ggplot(df.res.merge.edit, aes(x=min_maf)) + geom_histogram() + labs(title="MIN MAF, N=1000")
-#ggsave("min_maf_n1000.pdf")
-
-
-################# Export ####################
-df.res.merge.export <- df.res.merge
-### OLD WAY (before fit-hi-c) probename.x
-#df.res.merge.export <- subset(df.res.merge, select=-c(ID.x, probename.y, ID.y))
-### CURRENT WAY (using merge 'by=ID')
-#write.csv(df.res.merge.export, file="df.res.merge.export.csv")
-
-
-
-##################################### Plot epistasis model  ###########################################
 idx <- 1:10
 #idx <- 1:nrow(df.probe_snp_pair)
 ### Run function from script "function_plot_epistasis_model.R"
-plots <- plot_EpiModel(idx, df.probe_snp_pair, path.out=path.out.base.plots_model, add_data_heatmap=TRUE, save_images=TRUE, save_significant_treshold=1e-5)
-## TODO plot_EpiModel()
-# 1) add MAF(SNP1), MAF(SNP2) and min.maf to plot
+source(file.path(path.library,"function_plot_epistasis_model.R"))
+#plots <- plot_EpiModel(idx, df.input=df.x, path.out=path.out.base.plots_model, add_data_heatmap=TRUE, save_images=TRUE, save_significant_treshold=1e-5, plot.points.alpha=0.7)
+plots <- plot_EpiModel(1:nrow(df.selected), df.input=df.selected, path.out=path.out.base.plots_model, add_text_annotation=FALSE, add_data_heatmap=TRUE, save_images=TRUE, save_significant_treshold=1e-5, plot.points.alpha=0.7)
+
+###########################################################################################
+############################# PLOT P-value vs MIN-MAF/GENO ################################
+###########################################################################################
+
+df.tmp.y <- df.min_genotype_class_count.full %>% arrange(PVALUE) %>% slice(1:5)
+df.tmp.y
+
+### Draw random SNP-probe pairs
+set.seed(1) # important for reproduction
+df.rand <- df.min_genotype_class_count.full %>% sample_n(100000)
+#df.rand <- df.min_genotype_class_count.full
+str(df.rand)
+
+with(df.rand, cor(min_genotype_class_count, -log10(PVALUE)))
+with(df.rand, cor(min_genotype_class_count, PVALUE))
+with(df.rand, cor(snp.maf.min, PVALUE))
+
+### correlation
+ggplot(df.rand) + geom_point(aes(x=snp.maf.min, y=min_genotype_class_count))
+with(df.rand, cor(min_genotype_class_count, snp.maf.min))
+with(df.rand, cor.test(min_genotype_class_count, snp.maf.min, method="pearson"))
+
+### MIN maf
+ggplot(df.rand) + geom_point(aes(x=snp.maf.min, y=PVALUE))
+ggplot(df.rand) + geom_point(aes(x=snp.maf.min, y=-log10(PVALUE)))
+
+### MIN genotype class count
+ggplot(df.rand) + geom_point(aes(x=min_genotype_class_count, y=-log10(PVALUE)))
+
+
+#### USE this one for THESIS ####
+p <- ggplot(df.rand)
+p <- p + geom_boxplot(aes(x=factor(min_genotype_class_count), y=-log10(PVALUE)))
+p <- p + labs(x="Minimum genotype class count", y=expression(paste(-log[10], ("p-value") ) ))
+p
+ggsave(file="minimum_genotype_class_count-vs-pvalue_boxplot-8x4.pdf", w=8, h=4)
 
 
 
-######################################## Run individual ###########################################
 
-str(df.fastEpistasis.results)
-df.fastEpistasis.results[1,]
-str(geno)
+###########################################################################################
+############################# Barplot | distribution of minimum genotype class count ################################
+###########################################################################################
 
-i = 1
-name.probe <- "ILMN_2065022"
-name.snp1 <- "rs17421337" 
-name.snp2 <- "rs7237309" 
+### ** FINISH MEEE **** Stopped here July 10th ###
+
+#df.table <- data.frame(table(df.rand$min_genotype_class_count))
+#str(df.table)
+#df.table %>% rename(Var1)
+
+df.table <- df.rand %>%
+  group_by(min_genotype_class_count) %>%
+  summarise (n = n()) %>%
+  mutate(freq = n / sum(n), percentage = freq*100)
+df.table
+
+p <- ggplot(df.table)
+p <- p + geom_bar(aes(x=min_genotype_class_count, y=freq), stat="identity")
+p <- p + labs(x="Minimum genotype class count", y="Frequency")
+p + scale_x_continuous(breaks=0:6, limits=c(-0.5,6))
+p
+
+ggsave(file="minimum_genotype_class_count_counts_barplot_xlim-8x4.pdf", w=8, h=4)
+
+###########################################################################################
 
 
-# Extract data
-snp1 <- geno[, colnames(geno) == name.snp1]
-snp2 <- geno[, colnames(geno) == name.snp2]
-probe <- df.probes[, colnames(df.probes) == name.probe]
-#cbind(snp1, snp2)
-#probe <- rnorm(nrow(geno)) # random phenotype
-
-
-### MAF calculation
-# REMEMBER to remove NA when using sum()
-# number_of_individuals_with_snp/number_of_non_missing_datapoints
-# number_of_SNP[x]_alleles/total_number_of_alleles
-tmp.snp1.maf <- (sum(snp1==1,na.rm=T)*1 + sum(snp1==2, na.rm=T)*2)/(2*sum(!is.na(snp1)))
-tmp.snp2.maf <- (sum(snp2==1,na.rm=T)*1 + sum(snp2==2, na.rm=T)*2)/(2*sum(!is.na(snp2)))
-snp1.maf <- ifelse(tmp.snp1.maf <= 0.5, tmp.snp1.maf, 1-tmp.snp1.maf)
-snp2.maf <- ifelse(tmp.snp2.maf <= 0.5, tmp.snp2.maf, 1-tmp.snp2.maf)
-snp1.maf; snp2.maf
-
-tab <- table(data.frame(snp1, snp2))
-tab
-snp1.allele <- factor(snp1,levels=c("0", "1", "2", NA), exclude=NULL)
-snp2.allele <- factor(snp2,levels=c("0", "1", "2", NA), exclude=NULL)
-tab.allele <- table(data.frame(snp1.allele, snp2.allele))
-tab.allele
-df.twolocus <- as.data.frame(tab.allele)
-rownames(df.twolocus) <- paste("count_SNP1/SNP2=", df.twolocus$snp1.allele, "/", df.twolocus$snp2.allele, sep="")
-df.twolocus <- subset(df.twolocus, select=c(-snp1.allele, -snp2.allele))
-df.twolocus.t <- t(df.twolocus)
-df.twolocus.t
-
-cor(snp1, snp2, use="pairwise.complete.obs")
-length(tab) # replication_nclass
-min(tab, na.rm=T) #replication_minclass
-sum(!is.na(snp1) & !is.na(snp2)) # replication_nid
-
-## Full
-fullmod.multiplicative <- lm(probe ~ snp1 + snp2 + snp1:snp2)
-fullmod.multiplicative
-summary(fullmod.multiplicative)
-## Marginal
-margmod.multiplicative <- lm(probe ~ snp1 + snp2)
-summary(margmod.multiplicative)
-## Test for model reduction
-inttest_multiplicative <- anova(margmod.multiplicative, fullmod.multiplicative)
-inttest_multiplicative
-
-######################################### GARBAGE ###########################################
-
-### POTENTIALLY KEEP THIS FOR LATER REFERENCE
-#df.overview.2 <- df.min_genotype_class_count.sub %>% group_by(EID) %>% dplyr::summarise(count=dplyr::n()) %>% arrange(desc(count))
-#df.overview.2 <- df.min_genotype_class_count.sub %>% dplyr::count(EID) %>% arrange(desc(n)) # USED EARLIER - NOTICE the *dplyr::count(EID)* CALL
-#df.overview.2
 
 

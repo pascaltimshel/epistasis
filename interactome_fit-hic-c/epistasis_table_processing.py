@@ -128,6 +128,7 @@ path_main_out = path_main_input + "/epistasis_table_processing" # dir
 ### Epistasis: epistasis tables
 file_epistasis_table_processed = path_main_out + "/epistasis_table_pruned_processed.txt"
 file_epistasis_table_pruned_EIID = path_main_out + "/epistasis_table_pruned_EIID.txt"
+file_epistasis_table_pruned_EIID_probe = path_main_out + "/epistasis_table_pruned_EIID_probe.txt"
 file_epistasis_table_pruned_hemani = path_main_out + "/epistasis_table_pruned_hemani.txt"
 
 ### Epistasis: experiment counts and stats file
@@ -213,14 +214,16 @@ df_probe_annotation = epistasis_table_library.get_probe_annotation() # index of 
 ################## Dict for epistatic SNP-pairs counts ##################
 #epistatic_counts_dict = collections.defaultdict(lambda: collections.defaultdict(int)) # e.g. epistatic_counts_dict['MASTER_KEY']['EID'] = INTEGER
 	# the expression inside the parenthesis must be a 'callable'. That is why I use a 'lambda function'
-epistatic_counts_dict_master_keys = ["count_significant", "count_significant_pruned_EIID", "count_significant_pruned_hemani"] # *OBS* this is used for defining the order of the subplot histogram
+epistatic_counts_dict_master_keys = ["count_significant", "count_significant_pruned_EIID", "count_significant_pruned_EIID_probe", "count_significant_pruned_hemani"] # *OBS* this is used for defining the order of the subplot histogram
 epistatic_counts_dict = dict() #collections.defaultdict(dict)
 epistatic_counts_dict["count_significant"] = collections.defaultdict(int)
 epistatic_counts_dict["count_significant_pruned_EIID"] = collections.defaultdict(set) # *OBS*: set()
+epistatic_counts_dict["count_significant_pruned_EIID_probe"] = collections.defaultdict(int)
 epistatic_counts_dict["count_significant_pruned_hemani"] = collections.defaultdict(int)
 	### MASTER KEYS IN DICT:
 	# count_significant
 	# count_significant_pruned_EIID
+	# count_significant_pruned_EIID_probe | NEW June 2015
 	# count_significant_pruned_hemani
 
 
@@ -232,6 +235,9 @@ epistasis_table_dict = collections.defaultdict(list) # *OBS*: list
 epistasis_table_pruned_EIID_dict = epistasis_table_library.makehash() # "hash"/auto-vivification
 	# D[EID][EIID]['best_pvalue'] = pvalue
 	# D[EID][EIID]['best_line'] = line
+epistasis_table_pruned_EIID_probe_dict = epistasis_table_library.makehash() # "hash"/auto-vivification | NEW JUNE 2015
+	# D[EID][illumina_probe_id][EIID]['best_pvalue'] = pvalue
+	# D[EID][illumina_probe_id][EIID]['best_line'] = line
 epistasis_table_pruned_hemani_dict = epistasis_table_library.makehash() # "hash"/auto-vivification
 	# D[EID][illumina_probe_id][chr_pair]['best_pvalue'] = pvalue
 	# D[EID][illumina_probe_id][chr_pair]['best_line'] = line
@@ -335,6 +341,11 @@ with open(file_epistasis_table, 'r') as fh_compiled:
 			# D[EID][EIID]['best_pvalue'] = pvalue
 			epistasis_table_pruned_EIID_dict[EID][EIID]['best_pvalue'] = pvalue
 			epistasis_table_pruned_EIID_dict[EID][EIID]['best_line'] = line_out
+		# epistasis_table_pruned_EIID_probe_dict
+		if pvalue < epistasis_table_pruned_EIID_probe_dict[EID][illumina_probe_id][EIID]['best_pvalue']:
+			# D[EID][EIID]['best_pvalue'] = pvalue
+			epistasis_table_pruned_EIID_probe_dict[EID][illumina_probe_id][EIID]['best_pvalue'] = pvalue
+			epistasis_table_pruned_EIID_probe_dict[EID][illumina_probe_id][EIID]['best_line'] = line_out
 		# epistasis_table_pruned_hemani_dict
 		if pvalue < epistasis_table_pruned_hemani_dict[EID][illumina_probe_id][chr_pair]['best_pvalue']:
 			# D[EID][illumina_probe_id][chr_pair]['best_pvalue'] = pvalue
@@ -371,6 +382,29 @@ with open(file_epistasis_table_pruned_EIID, 'w') as fh:
 				# EXAMPLE [*FIXED*] --> ['best_pvalue', 'best_line']
 			line_out = EIID_dict["best_line"]
 			fh.write( line_out + "\n" )
+
+
+### epistasis_table_pruned_EIID_probe_dict ### | *NEW JUNE 2015*
+## epistasis_table_pruned_EIID_probe_dict[EID][EIID]['best_pvalue'] = pvalue
+with open(file_epistasis_table_pruned_EIID_probe, 'w') as fh:
+	for EID in sorted(epistasis_table_pruned_EIID_probe_dict, key=epistasis_table_library.function_sort_EID):
+		EID_dict = epistasis_table_pruned_EIID_probe_dict[EID]
+			# EID_dict.keys() is illumina_probe_id
+			# EXAMPLE --> ['ILMN_1684445', 'ILMN_1789639', 'ILMN_1701551', 'ILMN_1663793', 'ILMN_1814688', 'ILMN_1775441']
+
+		# for illumina_probe_id, illumina_probe_id_dict in EID_dict.items():
+		for illumina_probe_id in EID_dict:
+			illumina_probe_id_dict = EID_dict[illumina_probe_id]
+				# illumina_probe_id_dict.keys() is EIID
+				# EXAMPLE --> ['hic_1_2013', 'hic_1_2574']
+			n_chr_pair_epistatic_count = len(illumina_probe_id_dict.keys()) # this is the number of (unique) chromosome pairs with significant epistatic SNP-pairs
+			epistatic_counts_dict["count_significant_pruned_EIID_probe"][EID] += n_chr_pair_epistatic_count # populating master key in epistatic_counts_dict
+			# ^OBS: we INCREMENT the count
+			
+
+			for EIID in sorted(illumina_probe_id_dict, key=epistasis_table_library.function_sort_EIID):
+				line_out = illumina_probe_id_dict[EIID]["best_line"]
+				fh.write( line_out + "\n" )
 
 
 ### epistasis_table_pruned_hemani_dict ###
@@ -414,13 +448,12 @@ df_experiment_identifier_counts = df_experiment_identifier_counts.fillna(0) # fi
 ### COLUMNS IN DATAFRAME: "keys of epistatic_counts_dict"
 	# count_significant
 	# count_significant_pruned_EIID
+	# count_significant_pruned_EIID_probe | NEW June 2015
 	# count_significant_pruned_hemani
 
 
 for key_master in epistatic_counts_dict:
 	for EID in epistatic_counts_dict[key_master]:
-	#for EID in experiments_dict:
-		#df_experiment_identifier_counts[key_master][]
 		if key_master == 'count_significant_pruned_EIID':
 			n_epistatic_counts = len(epistatic_counts_dict[key_master][EID]) # length of set()
 			### Validation: the two methods of counting should give the same
@@ -476,10 +509,12 @@ with open(file_epistatic_stats, 'w') as fh:
 	### Hi-C
 	fh.write( "HIC count_significant: {}\n".format(df_experiment_identifier_counts.ix['hic_1', 'count_significant']) )
 	fh.write( "HIC count_significant_pruned_EIID: {}\n".format(df_experiment_identifier_counts.ix['hic_1', 'count_significant_pruned_EIID']) )
+	fh.write( "HIC count_significant_pruned_EIID_probe: {}\n".format(df_experiment_identifier_counts.ix['hic_1', 'count_significant_pruned_EIID_probe']) )
 	fh.write( "HIC count_significant_pruned_hemani: {}\n".format(df_experiment_identifier_counts.ix['hic_1', 'count_significant_pruned_hemani']) )
 
 	fh.write( "p_value_dict[count_significant]: {}\n".format(p_value_dict['count_significant']) )
 	fh.write( "p_value_dict[count_significant_pruned_EIID]: {}\n".format(p_value_dict['count_significant_pruned_EIID']) )
+	fh.write( "p_value_dict[count_significant_pruned_EIID_probe]: {}\n".format(p_value_dict['count_significant_pruned_EIID_probe']) )
 	fh.write( "p_value_dict[count_significant_pruned_hemani]: {}\n".format(p_value_dict['count_significant_pruned_hemani']) )
 
 
