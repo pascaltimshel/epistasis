@@ -1,0 +1,26 @@
+PLINK v1.90b2o 64-bit (25 Nov 2014)
+7 arguments: --bfile /Users/pascaltimshel/Dropbox/5_Data/EGCUT_DATA/geno/maf5_clean_duprm/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.maf5.duprm --extract /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8/epistasis_table_processing/analysis_epi_table/SNP_AB.union.txt --make-bed --out /Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8/epistasis_table_processing/analysis_epi_table/egcut_snpsubset
+Hostname: Pascals-MacBook-Pro.local
+Working directory: /Users/pascaltimshel/Dropbox/0_Projects/git/epistasis/interactome_fit-hic-c
+Start time: Mon Jul 13 11:22:01 2015
+
+Random number seed: 1436779321
+16384 MB RAM detected; reserving 8192 MB for main workspace.
+1779665 variants loaded from .bim file.
+832 people (832 males, 0 females) loaded from .fam.
+--extract: 18600 variants remaining.
+Using 1 thread (no multithreaded calculations invoked).
+Before main variant filters, 832 founders and 0 nonfounders present.
+Calculating allele frequencies... done.
+Total genotyping rate is 0.980546.
+18600 variants and 832 people pass filters and QC.
+Note: No phenotypes present.
+--make-bed to
+/Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8/epistasis_table_processing/analysis_epi_table/egcut_snpsubset.bed
++
+/Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8/epistasis_table_processing/analysis_epi_table/egcut_snpsubset.bim
++
+/Users/pascaltimshel/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2/hIMR90_width_2500_maf_5_q_1e-07_epi1_1e-8/epistasis_table_processing/analysis_epi_table/egcut_snpsubset.fam
+... done.
+
+End time: Mon Jul 13 11:22:03 2015

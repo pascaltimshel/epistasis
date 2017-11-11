@@ -31,7 +31,9 @@ write_snp_subset_plink_file <- function(df, path.out) {
   file.out.union <- paste0(path.out,"/SNP_AB.union.txt")
   file.out.plink_prefix <-paste0(path.out,"/egcut_snpsubset")
   
-  exec.plink2 <- path.expand("~/p_bioinformatic_tools/plink_1.9_mac_25_Nov_2014/plink")
+  #exec.plink2 <- path.expand("~/p_bioinformatic_tools/plink_1.9_mac_25_Nov_2014/plink")
+  exec.plink2 <- path.expand("~/p_bioinformatic_tools/plink_1.9_mac_09-03-2015/plink")
+  
   #bed.file <- "/Users/pascaltimshel/Dropbox/5_Data/EGCUT_DATA/geno/all_clean/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean" # NO EXTENSION (no .bed)
   bed.file <- path.expand("~/Dropbox/5_Data/EGCUT_DATA/geno/maf5_clean_duprm/Prote_370k_251011.no_mixup.with_ETypes.chr_infered.clean.maf5.duprm") # NO EXTENSION (no .bed)
              

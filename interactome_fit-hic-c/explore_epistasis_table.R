@@ -53,7 +53,8 @@ path.out.subdir <- "epistasis_table_processing"
 
 path.out <- path.expand("~/p_HiC/Ferhat_Ay_2014/fastEpi_compiled_broad_scp_null_v2")
 path.out.base <- file.path(path.out, param.job_identifier, path.out.subdir)
-path.out.base.analysis_epi_table <- file.path(path.out.base, "analysis_epi_table")
+#path.out.base.analysis_epi_table <- file.path(path.out.base, "analysis_epi_table") # DEFAULT! [before 2015-11]
+path.out.base.analysis_epi_table <- file.path(path.out.base, "analysis_epi_table_thesis-2015-11")
 path.out.base.analysis_epi_table
 
 path.out.base.plots_model <- file.path(path.out.base.analysis_epi_table, "plot_epistasis_model")
@@ -198,8 +199,10 @@ str(df.fastEpistasis.results)
 df.fastEpistasis.results$snp.maf.min <- with(df.fastEpistasis.results, pmin(snp1.maf, snp2.maf))
 #sum(df.fastEpistasis.results$snp.maf.min > 0.2)
 
+thresshold.snp.maf.min <- 0  # No subsetting, may take a long time
+df.fastEpistasis.results.maf.gt <- subset(df.fastEpistasis.results, snp.maf.min>=thresshold.snp.maf.min)
 #df.fastEpistasis.results.maf.gt <- subset(df.fastEpistasis.results, snp.maf.min>=0.04)
-df.fastEpistasis.results.maf.gt <- subset(df.fastEpistasis.results, snp.maf.min>=0.1)
+#df.fastEpistasis.results.maf.gt <- subset(df.fastEpistasis.results, snp.maf.min>=0.1) # DEFAULT!! [used before 2015-11]
 #df.fastEpistasis.results.maf.gt <- subset(df.fastEpistasis.results, snp.maf.min>=0.25)
 nrow(df.fastEpistasis.results.maf.gt)
 
@@ -221,6 +224,16 @@ min_genotype_class_count_threshold <- 3 # 3 | 5 | 10
 ### SUBSET DATA FRAME
 df.min_genotype_class_count.sub <- subset(df.min_genotype_class_count.full, min_genotype_class_count >= min_genotype_class_count_threshold)
 print(sprintf("number of SNP-pairs satisfying criteria: %s (%.2f %%)", nrow(df.min_genotype_class_count.sub), nrow(df.min_genotype_class_count.sub)/nrow(df.min_genotype_class_count.full)*100))
+
+################################ *** THESIS 2015-11 *** #################################
+# GOAL: Write out epistasis table with MAF annotation, minimum GCC
+# This is "temporary" content.
+# Use may use keep if you like 
+# OBS: we write out "df.min_genotype_class_count.full" SO you should *NOT* subset on MAF, if you want ALL SNP-probe pairs
+#file.out.thesis_epistasis_table <- file.path(path.out.base.analysis_epi_table, sprintf("thesis_epistasis_table_snp.maf.min-%s.csv", thresshold.snp.maf.min))
+#write.csv(df.min_genotype_class_count.full, file=file.out.thesis_epistasis_table)
+
+### SELECTING SPECIFIC SNP-probe pairs?
 
 ################################ *** EPISTASIS ENRICHMENT *** #################################
 
