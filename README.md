@@ -20,4 +20,4 @@ By leveraging data integration of genome-wide genetic, transcriptomic and Hi-C d
 The hypothesis was tested under different scenarios of spatial epistasis, including genome structures from multiple cell lines. For one of the cell lines tested, I identified enrichment of spatial epistasis. However, the signal was eliminated, after more thorough quality control of the data. I conclude that this study was underpowered to detect epistasis at this scale. Nevertheless, these results does not support the existence of prevailing epistasis influencing human gene expression. It remains inconclusive whether spatially interacting genomic regions are enriched for epistasis, and ultimately, there is no evidence to definitively reject or accept the spatial epistasis hypothesis.
 
 
-![Alt text](thesis-tex/circos_plot_hemani_SNPs-8x8-EDIT.pdf?raw=true "Title")
+![Alt text](thesis-tex/circos_plot_hemani_SNPs-8x8-EDIT.png?raw=true "Title")
