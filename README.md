@@ -1,12 +1,12 @@
 Spatial and Genetic Interactions Influencing Human Gene Expression
 =========
 
-Master’s Thesis in Computational Biology
+Master’s Thesis in Computational Biology  
 Technical University of Denmark, 2015
 
 ### Files
 
-[Thesis pdf](thesis-pdf/PTimshel_MSc_thesis.pdf)
+[Thesis pdf](thesis-pdf/PTimshel_MSc_thesis.pdf)  
 [Thesis defense](thesis-pdf/PTimshel_MSc_defense.pdf)
 
 ### Abstract
